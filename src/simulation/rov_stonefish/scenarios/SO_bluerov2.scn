@@ -297,15 +297,6 @@
 			<ros_publisher topic="/$(arg vehicle_name)/odometry"/>
 		</sensor>
 
-		<!-- <sensor name="INS" rate="100.0" type="ins">
-			<output_frame rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-			<noise angular_velocity="0.00001745" linear_acceleration="0.00005"/>
-			<external_sensors dvl="dvl" gps="gps" pressure="pressure"/>
-			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
-			<link name="base_link"/>
-			<ros_publisher topic="/$(arg vehicle_name)/INS"/>
-		</sensor> -->
-
 		<sensor name="pressure" type="pressure" rate="60.0">
 			<link name="base_link"/>
 			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
@@ -320,13 +311,6 @@
 			<ros_publisher topic="/$(arg vehicle_name)/imu"/>
 		</sensor>
 
-		<sensor name="gps" type="gps" rate="1.0">
-			<link name="base_link"/>
-			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.15"/>
-			<noise ned_position="0.0"/>
-			<ros_publisher topic="/$(arg vehicle_name)/gps"/>
-		</sensor> 
-
 		<sensor name="dvl" type="dvl" rate="5.0">
 			<link name="base_link"/>
 			<origin rpy="3.1416 0.0 0.0" xyz="0.0 0.0 0.0"/>
@@ -337,19 +321,9 @@
 						   altitude_topic="/$(arg vehicle_name)/altitude"/>
 		</sensor>
 
-		<!-- <sensor name="multibeam" rate="1.0" type="multibeam">
-			<specs fov="120.0" steps="240"/>
-			<range distance_min="0.5" distance_max="50.0"/>
-			<noise distance="0.1"/>
-			<history samples="1"/>
-			<origin xyz="0.0 0.0 0.3" rpy="0.0 -1.571 0.0"/>
-			<link name="base_link"/>
-			<ros_publisher topic="/$(arg vehicle_name)/multibeam"/>
-		</sensor> -->
-
 		<sensor name="fls" rate="2.0" type="fls">
 			<!--<specs beams="480" bins="120" horizontal_fov="120.0" vertical_fov="30.0"/>-->
-			<specs beams="120" bins="30" horizontal_fov="120.0" vertical_fov="30.0"/>
+			<specs beams="480" bins="240" horizontal_fov="120.0" vertical_fov="30.0"/>
 			<settings range_min="0.5" range_max="100.0" gain="1.0"/>
 			<noise multiplicative="0.02" additive="0.05"/>
 			<display colormap="hot"/>
@@ -358,34 +332,6 @@
 			<ros_publisher topic="/$(arg vehicle_name)/fls"/>
 		</sensor> 
 
-		 <sensor name="multibeam" rate="1.0" type="multibeam">
-			<specs fov="90.0" steps="128"/>
-			<range distance_min="0.5" distance_max="50.0"/>
-			<noise distance="0.1"/>
-			<history samples="1"/>
-			<origin xyz="0.0 0.0 0.3" rpy="0.0 -1.571 0.0"/>
-			<link name="base_link"/>
-			<ros_publisher topic="/$(arg vehicle_name)/multibeam"/>
-		</sensor> 
-		<!-- <sensor name="fls_noise" type="fls">
-			<specs beams="480" bins="120" horizontal_fov="120.0" vertical_fov="30.0"/>
-			<settings range_min="0.5" range_max="100.0" gain="1.0"/>
-			<noise multiplicative="0.02" additive="0.05"/>
-			<display colormap="hot"/>
-			<origin xyz="0.0 0.0 0.3" rpy="1.047 0.0 1.571"/>
-			<link name="base_link"/>
-			<ros_publisher topic="/$(arg vehicle_name)/fls"/>
-		</sensor> -->
-
-		<!-- <sensor name="SSS" type="sss">
-			<specs bins="500" lines="400" horizontal_beam_width="1.0" vertical_beam_width="50.0" vertical_tilt="30.0"/>
-			<settings range_min="1.0" range_max="100.0" gain="1.2"/>
-			<noise multiplicative="0.02" additive="0.04"/>
-			<display colormap="hot"/>
-			<origin xyz="0.0 0.0 0.3" rpy="0.0 0.0 1.571"/>
-			<link name="base_link"/>
-			<ros_publisher topic="/$(arg vehicle_name)/sidescan"/>
-		</sensor> -->
 
 		<!-- Bluerov 6 thrusters XY  -->
 		<!-- <origin xyz="0.1355 -0.1 -0.0725" rpy="0 0 0.7853981634"/>
