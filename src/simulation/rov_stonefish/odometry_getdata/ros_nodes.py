@@ -6,6 +6,7 @@ from rclpy.node import Node
 from stonefish_ros2.msg import DVL, ThrusterState
 from sensor_msgs.msg import Range, Image, CompressedImage, NavSatFix, Imu, LaserScan
 from nav_msgs.msg import Odometry
+from ds4_driver_msgs.msg import Status
 
 import message_filters
 from message_filters import ApproximateTimeSynchronizer, Subscriber
@@ -14,12 +15,6 @@ import numpy as np
 import cv2
 from cv_bridge import CvBridge
 
-
-import os
-os.environ['DISPLAY'] = ':23'
-# os.environ['QT_X11_NO_MITSHM'] = '1'
-# os.environ['LIBGL_ALWAYS_INDIRECT'] = '1'
-# os.environ['GDK_BACKEND'] = 'x11'
 
 # Params
 SLOP_TIME = 0.9 # time tolerance to put measurements in one package
@@ -55,6 +50,13 @@ class StonefishSubscriber(Node):
             )
         
         self.ats.registerCallback(self.sync_callback)
+
+        # Data containers
+        self.POSITION = None # np.array, dtype float64 shape (6,)
+        self.VELOCITY = None # np.array, dtype float64 shape (6,)
+        self.FLS = None # np.aray (image)
+        self.TIME_STAMP = 0.0
+
         self.get_logger().info('Subscriptions created:\n- GPS\n- Odometry\n- FLS')
 
 
@@ -66,8 +68,8 @@ class StonefishSubscriber(Node):
             self.init = True
 
         # --- Odometry --- 
-        t_odometry_f = odometry_msg.header.stamp.sec + odometry_msg.header.stamp.nanosec * 1e-9 - self.t0_odometry_f
-        pos_odometry = np.array([  odometry_msg.pose.pose.position.x,
+        self.TIME_STAMP = odometry_msg.header.stamp.sec + odometry_msg.header.stamp.nanosec * 1e-9 - self.t0_odometry_f
+        self.POSITION = np.array([  odometry_msg.pose.pose.position.x,
                                         odometry_msg.pose.pose.position.y,
                                         odometry_msg.pose.pose.position.z,
                                         odometry_msg.pose.pose.orientation.x,
@@ -76,7 +78,7 @@ class StonefishSubscriber(Node):
                                         odometry_msg.pose.pose.orientation.w
                                     ], dtype=np.float64)
         
-        vel_odometry = np.array([   odometry_msg.twist.twist.linear.x,
+        self.VELOCITY = np.array([   odometry_msg.twist.twist.linear.x,
                                     odometry_msg.twist.twist.linear.y,
                                     odometry_msg.twist.twist.linear.z,
                                     odometry_msg.twist.twist.angular.x,
@@ -89,43 +91,54 @@ class StonefishSubscriber(Node):
         try:
             fls_img_cv = self.bridge.imgmsg_to_cv2(FLS_msg, desired_encoding='bgr8')
             fls_img_cv = cv2.normalize(fls_img_cv, None,  alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-            # print('diplay shape:', fls_img_cv.shape)
-            cv2.imshow(f"FLS Image ({fls_img_cv.shape[1]}x{fls_img_cv.shape[0]})", fls_img_cv)
-            cv2.waitKey(1)
+            self.FLS = fls_img_cv
         except Exception as e:
             self.get_logger().error(f'[Error] Image conversion error:\n{e}')
 
-        # if self.VISU_FLAG:
-        #     try:
-        #         cv2.imshow(f"FLS Image ({fls_img_cv.shape[1]}x{fls_img_cv.shape[0]})", fls_img_cv)
-        #         cv2.waitKey(1)
+
+# --- Control Node ---
 
 
-        #     except Exception as e:
-        #         print('[Error] Sonar image display error.')
+class StonefishPublisher(Node):
+    def __init__(self):
+        super().__init__('stonefish_publisher')
+        publisher_buff = 5 
+        self.publisher = self.create_publisher(Status, 'status', publisher_buff)
 
+    def send_cmd(self, cmd_shift: list, cmd_rotate: list): 
+        msg = Status()
+        
+        shift_x, shift_y, shift_z = cmd_shift
+        rotate_x, rotate_y, rotate_z = cmd_rotate
 
-        self.get_logger().info(f'\n--- time: {t_odometry_f:.4f} ---\n x: {pos_odometry[0]:.4f}, y: {pos_odometry[1]:.4f}, z: {pos_odometry[2]:.4f}\n Rx: {pos_odometry[3]:.4f}, Ry: {pos_odometry[4]:.4f}, Rz: {pos_odometry[5]:.4f}')
-        # output_string = (
-        #     f"\r[T: {t_odometry:.4f}s] "
-        #     f"POS (x,y,z): {pos_odometry[0]:.4f}, {pos_odometry[1]:.4f}, {pos_odometry[2]:.4f} | "
-        #     f"QUAT (x,y,z,w): {pos_odometry[3]:.4f}, {pos_odometry[4]:.4f}, {pos_odometry[5]:.4f}, {pos_odometry[6]:.4f}"
-        # )
-        # sys.stdout.write(output_string.ljust(150))
-        # sys.stdout.flush() 
+        # Axis mapping
+        msg.axis_left_x = float(shift_y) # left/right
+        msg.axis_left_y = float(shift_x) # forward/backward
+        
+        msg.axis_right_x = float(rotate_z) # yaw (z-axis rot.)
+        msg.axis_right_y = float(shift_z) # up/down
 
+        # Pitch
+        if rotate_y > 0:
+            msg.axis_r2 = float(rotate_y)
+            msg.axis_l2 = 0.0
+        elif rotate_y < 0:
+            msg.axis_r2 = 0.0
+            msg.axis_l2 = float(-rotate_y)
+        else: 
+            msg.axis_r2 = 0.0
+            msg.axis_l2 = 0.0
 
-def main(args=None):
-    rclpy.init(args=args)
-    stonefish_subscriber = StonefishSubscriber()
-    try:
-        rclpy.spin(stonefish_subscriber)
-    except KeyboardInterrupt:
-        sys.stdout.write('\n')
-        pass  
+        # Roll 
+        if rotate_x > 0:
+            msg.button_dpad_right = int(rotate_x)
+            msg.button_dpad_left = 0
+        elif rotate_x < 0: 
+            msg.button_dpad_right = 0
+            msg.button_dpad_left = int(-rotate_x)
+        else: 
+            msg.button_dpad_right = 0
+            msg.button_dpad_left = 0
 
-    stonefish_subscriber.destroy_node()
-    rclpy.shutdown()
-
-if __name__ == '__main__':
-    main()
+        self.publisher.publish(msg)
+        # print(f'[Event] Message sent: Linear={cmd_shift}, Angular={cmd_rotate}')

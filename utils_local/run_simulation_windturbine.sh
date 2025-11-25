@@ -8,6 +8,8 @@ ros2 launch rov_stonefish SO_windturbine_bluerov2.launch.py \
 scenario:=/home/dev/ros2_ws/src/simulation/rov_stonefish/scenarios/SO_windturbine_bluerov2.scn
 
 
+
+
 # In case of problem with acces to gpu:
 # - sudo hase rights to use gpu 
 # sudo groupadd -g 1001 nvidia_host

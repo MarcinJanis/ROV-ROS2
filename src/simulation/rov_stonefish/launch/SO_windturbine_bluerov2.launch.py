@@ -44,6 +44,7 @@ def generate_launch_description():
         parameters=[LaunchConfiguration('config')]
     )
 
+   
     wrench_system_launch = IncludeLaunchDescription(
         launch_description_source=PathJoinSubstitution([passthrough_control, 'launch', 'base.launch.py']),
         launch_arguments={
