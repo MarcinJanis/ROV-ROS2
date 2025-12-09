@@ -44,6 +44,7 @@ def generate_launch_description():
         parameters=[LaunchConfiguration('config')]
     )
 
+   
     wrench_system_launch = IncludeLaunchDescription(
         launch_description_source=PathJoinSubstitution([passthrough_control, 'launch', 'base.launch.py']),
         launch_arguments={
@@ -57,11 +58,17 @@ def generate_launch_description():
         arguments=["0", "0", "0", "0", "0", "0", "stonefish_world", "bluerov2/imu_filter"]
     )
 
-    tf_multibeam = Node(
+    tf_fls = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0", "0", "0", "0", "0", "0", "stonefish_multibeam", "bluerov2/multibeam"]
+        arguments=["0", "0", "0", "0", "0", "0", "base_link", "bluerov2/fls"]
     )
+
+    # tf_multibeam = Node(
+    #     package="tf2_ros",
+    #     executable="static_transform_publisher",
+    #     arguments=["0", "0", "0", "0", "0", "0", "stonefish_multibeam", "bluerov2/multibeam"]
+    # )
 
     tf_odometry = Node(
         package="tf2_ros",
@@ -73,6 +80,12 @@ def generate_launch_description():
         package="tf2_ros",
         executable="static_transform_publisher",
         arguments=["0", "0", "0", "0", "0", "0", "stonefish_pressure", "bluerov2/pressure"]
+    )
+
+    tf_dvl = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "0", "0", "0", "0", "base_link", "bluerov2/dvl"]
     )
 
     rviz_node = Node(
@@ -88,7 +101,7 @@ def generate_launch_description():
             get_package_share_directory('stonefish_ros2') + '/launch/stonefish_simulator.launch.py'),
         launch_arguments={
             'simulation_data': get_package_share_directory('rov_stonefish') + '/data/',
-            'scenario_desc': get_package_share_directory('rov_stonefish') + '/scenarios/windturbine_bluerov2.scn',
+            'scenario_desc': get_package_share_directory('rov_stonefish') + '/scenarios_so/windturbine_bluerov2.scn',
             'simulation_rate': '30.0',
             'window_res_x': '1720',
             'window_res_y': '980',
@@ -110,7 +123,9 @@ def generate_launch_description():
         wrench_system_launch,
         rviz_timer,
         tf_imu,
-        tf_multibeam,
+        tf_fls,
+        tf_dvl,
+        # tf_multibeam,
         tf_odometry,
         tf_pressure
     ])

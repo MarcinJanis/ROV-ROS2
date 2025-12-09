@@ -86,7 +86,7 @@
 		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 25.0"/>
 	</static>
 
-    <include file="$(find rov_stonefish)/scenarios/bluerov2.scn">
+    <include file="$(find rov_stonefish)/scenarios/SO_bluerov2.scn">
 		<arg name="vehicle_name" value="bluerov2"/>
 		<arg name="position" value="-9.0 -1.0 19.5"/>
 		<arg name="orientation" value="0.0 0.0 1.2"/>
