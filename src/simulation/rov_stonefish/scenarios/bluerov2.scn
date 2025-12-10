@@ -322,12 +322,13 @@
 		</sensor>
 
 		<sensor name="fls" rate="2.0" type="fls">
-			<!--<specs beams="480" bins="120" horizontal_fov="120.0" vertical_fov="30.0"/>-->
-			<specs beams="480" bins="240" horizontal_fov="120.0" vertical_fov="30.0"/>
+			<!--<specs beams="480" bins="240" horizontal_fov="120.0" vertical_fov="30.0"/>-->
+			<specs beams="480" bins="512" horizontal_fov="120.0" vertical_fov="30.0"/>
 			<settings range_min="0.5" range_max="100.0" gain="1.0"/>
-			<noise multiplicative="0.02" additive="0.05"/>
+			<noise multiplicative="0" additive="0"/> <!-- 0.05, 0.01-->
 			<display colormap="hot"/>
-			<origin xyz="0.0 0.0 0.3" rpy="1.047 0.0 1.571"/>
+			<!-- <origin xyz="0.0 0.0 0.3" rpy="1.047 0.0 1.571"/> --> 
+			<origin xyz="0.2 0.0 -0.1" rpy="0.0 0.26 0.0"/>
 			<link name="base_link"/>
 			<ros_publisher topic="/$(arg vehicle_name)/fls"/>
 		</sensor> 

@@ -71,7 +71,7 @@ class StonefishSubscriber(Node):
 
         # --- Odometry --- 
         self.TIME_STAMP = odometry_msg.header.stamp.sec + odometry_msg.header.stamp.nanosec * 1e-9 - self.t0_odometry_f
-        self.get_logger().info(f'[msg recived] [t: {self.TIME_STAMP}]')
+        # self.get_logger().info(f'[msg recived] [t: {self.TIME_STAMP}]')
         self.POSITION = np.array([  odometry_msg.pose.pose.position.x,
                                         odometry_msg.pose.pose.position.y,
                                         odometry_msg.pose.pose.position.z,
@@ -131,5 +131,5 @@ class StonefishPublisher(Node):
         msg.wrench.torque.y = float(rotate_y) # Pitch
         msg.wrench.torque.z = float(rotate_z) # Yaw
 
-        self.get_logger().info(f'[Event] Command set: Force={cmd_shift}, Torque={cmd_rotate}')
+        # self.get_logger().info(f'[Event] Command set: Force={cmd_shift}, Torque={cmd_rotate}')
         self.publisher.publish(msg)
