@@ -4,7 +4,7 @@ source install/setup.bash
 DISPLAY=:23 \
 __NV_PRIME_RENDER_OFFLOAD=1 \
 __GLX_VENDOR_LIBRARY_NAME=nvidia \
-ros2 launch rov_stonefish SO_wreckage_bluerov2.launch.py \
+ros2 launch rov_stonefish wreckage_bluerov2.launch.py \
 scenario:=/home/dev/ros2_ws/src/simulation/rov_stonefish/scenarios_so/wreckage_bluerov2.scn
 
 

@@ -7,7 +7,7 @@ DISPLAY=:23 \
 __NV_PRIME_RENDER_OFFLOAD=1 \
 __GLX_VENDOR_LIBRARY_NAME=nvidia \
 ros2 launch rov_stonefish windturbine_bluerov2.launch.py \
-scenario:=/home/dev/ros2_ws/src/simulation/rov_stonefish/scenarios_so/windturbine_bluerov2.scn
+scenario:=/home/dev/ros2_ws/src/simulation/rov_stonefish/scenarios/windturbine_bluerov2.scn
 
 
 
