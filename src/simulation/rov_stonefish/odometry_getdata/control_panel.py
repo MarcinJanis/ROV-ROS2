@@ -1,4 +1,3 @@
-
 import sys 
 from threading import Thread
 import rclpy
@@ -16,205 +15,184 @@ import tkinter as tk
 import os
 os.environ['DISPLAY'] = ':23'
 
-
 class Panel:
     def __init__(self, root, publisher_node, listener_node):
         self.root = root
         self.publisher_node = publisher_node
         self.listener_node = listener_node
 
+        self.root.title("ROV Control Panel")
+        self.root.geometry("900x550") 
+
         # --- Trajectory State ---
-        # Map size 200x200 (pixels) with white background (RGB)
-        self.trajectory = np.ones((200, 200, 3), dtype = np.uint8) * 255 
+        self.map_size = 300     
+        self.map_scale = 20     # [px/m]
+        
+        # map background
+        self.map_background = np.ones((self.map_size, self.map_size, 3), dtype=np.uint8) * 255
+        
         self.last_pos_px = None 
-        self.map_scale = 20     # Scale: 20 pixels per 1 meter ROS
-        self.map_size = 200     
+        self.origin_pos = None  # start pose
 
-        self.root.title("ROV Control Panel and Telemetry")
-        self.root.geometry("800x500")
-
-        # --- Control ---
+        # --- Control State ---
         self.shift_state = [0.0, 0.0, 0.0]
         self.rotate_state = [0.0, 0.0, 0.0]
-        self.power = 0.5
+        self.power = 40.0 # Scale factor - power
 
-        # --- Grid configuration ---
-        # Column 0: Trajectory (Weight 2)
-        # Column 1: Controls (Weight 1)
-        # Column 2: Sonar (Weight 2)
-        self.root.columnconfigure(0, weight=2)
+        # --- Layout Configuration ---
+        self.root.columnconfigure(0, weight=1)
         self.root.columnconfigure(1, weight=1) 
-        self.root.columnconfigure(2, weight=2)
-        
-        # Row 0: Labels (Low weight)
-        # Row 1: Displays and Controls (High weight)
-        self.root.rowconfigure(0, weight=0) 
+        self.root.columnconfigure(2, weight=1)
         self.root.rowconfigure(1, weight=1) 
         
-        # --- Etykiety nad wyświetlaczami (Row 0) ---
-        tk.Label(root, text="TRAJEKTORIA (2D)", font=('Arial', 10, 'bold')).grid(row=0, column=0, pady=(5, 0))
-        tk.Label(root, text="SONAR FLS", font=('Arial', 10, 'bold')).grid(row=0, column=2, pady=(5, 0))
+        # Labels
+        tk.Label(root, text="TRAJEKTORIA (Top-Down)", font=('Arial', 10, 'bold')).grid(row=0, column=0, pady=5)
+        tk.Label(root, text="STEROWANIE", font=('Arial', 10, 'bold')).grid(row=0, column=1, pady=5)
+        tk.Label(root, text="SONAR FLS", font=('Arial', 10, 'bold')).grid(row=0, column=2, pady=5)
         
-        
-        # --- TRAJECTORY DISPLAY (Kolumna 0, Row 1) ---
-        self.ImgPlaceholder_Trajectory = tk.Label(
-            root, 
-            text="Trajectory Map - Waiting for Data", 
-            bg="gray", 
-            width=200,
-            height=200,
-            relief=tk.SUNKEN 
-        )
+        # 1. Trjectory map
+        self.ImgPlaceholder_Trajectory = tk.Label(root, bg="white", relief=tk.SUNKEN)
         self.ImgPlaceholder_Trajectory.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-
-        # --- FLS measurements display (Kolumna 2, Row 1) ---
-        self.ImgPlaceholder_Sonar = tk.Label(
-            root, 
-            text="Forward Looking Sonar - Waiting for Data", 
-            bg="gray", 
-            width=200,
-            height=200,
-            relief=tk.SUNKEN
-        )
-        self.ImgPlaceholder_Sonar.grid(row=1, column=2, padx=10, pady=10, sticky="nsew")
-
-
-        # --- PRZYCISKI W KONTENERZE (Kolumna 1, Row 1) ---
-        control_frame = tk.Frame(root, padx=10, pady=10)
-        # Umieszczamy ramkę w rzędzie 1 i kolumnie 1
-        control_frame.grid(row=1, column=1, sticky="nsew") 
+        # 2. Controls
+        control_frame = tk.Frame(root, bd=2, relief=tk.GROOVE)
+        control_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=10)
+        
+        # Control panel grid - layout 
         control_frame.columnconfigure(0, weight=1)
         control_frame.columnconfigure(1, weight=1)
 
-        # Forward (Row 0 wewnątrz control_frame)
-        btn_forward = tk.Button(control_frame, text='Forward (X+)', bg="#E0E0FF")
-        btn_forward.grid(row=0, column=0, columnspan=2, sticky="ew", pady=5)
-        btn_forward.bind('<ButtonPress-1>', lambda event: self.set_shift_x(self.power))
-        btn_forward.bind('<ButtonRelease-1>', lambda event: self.set_shift_x(0.0))
+        # Buttons
+        btn_fwd = tk.Button(control_frame, text='▲\nForward', bg="#d1e7dd", height=3)
+        btn_fwd.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+        btn_fwd.bind('<ButtonPress-1>', lambda e: self.set_shift_x(self.power))
+        btn_fwd.bind('<ButtonRelease-1>', lambda e: self.set_shift_x(0.0))
 
-        # Left / Right (Row 1 wewnątrz control_frame)
-        btn_left = tk.Button(control_frame, text='Left (Y+)', bg="#E0E0FF")
-        btn_left.grid(row=1, column=0, sticky="ew", padx=(0, 2), pady=5)
-        btn_left.bind('<ButtonPress-1>', lambda event: self.set_shift_y(self.power)) 
-        btn_left.bind('<ButtonRelease-1>', lambda event: self.set_shift_y(0.0))
+        btn_left = tk.Button(control_frame, text='◀ Left', bg="#d1e7dd", height=3)
+        btn_left.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+        btn_left.bind('<ButtonPress-1>', lambda e: self.set_shift_y(self.power)) # Y+ to lewo w ROS
+        btn_left.bind('<ButtonRelease-1>', lambda e: self.set_shift_y(0.0))
 
-        btn_right = tk.Button(control_frame, text='Right (Y-)', bg="#E0E0FF")
-        btn_right.grid(row=1, column=1, sticky="ew", padx=(2, 0), pady=5)
-        btn_right.bind('<ButtonPress-1>', lambda event: self.set_shift_y(-self.power))
-        btn_right.bind('<ButtonRelease-1>', lambda event: self.set_shift_y(0.0))
+        btn_right = tk.Button(control_frame, text='Right ▶', bg="#d1e7dd", height=3)
+        btn_right.grid(row=1, column=1, sticky="ew", padx=5, pady=5)
+        btn_right.bind('<ButtonPress-1>', lambda e: self.set_shift_y(-self.power)) # Y- to prawo w ROS
+        btn_right.bind('<ButtonRelease-1>', lambda e: self.set_shift_y(0.0))
 
-        # Backward (Row 2 wewnątrz control_frame)
-        btn_backward = tk.Button(control_frame, text='Backward (X-)', bg="#E0E0FF")
-        btn_backward.grid(row=2, column=0, columnspan=2, sticky="ew", pady=5)
-        btn_backward.bind('<ButtonPress-1>', lambda event: self.set_shift_x(-self.power))
-        btn_backward.bind('<ButtonRelease-1>', lambda event: self.set_shift_x(0.0))
+        btn_back = tk.Button(control_frame, text='▼\nBackward', bg="#d1e7dd", height=3)
+        btn_back.grid(row=2, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+        btn_back.bind('<ButtonPress-1>', lambda e: self.set_shift_x(-self.power))
+        btn_back.bind('<ButtonRelease-1>', lambda e: self.set_shift_x(0.0))
+        
+        # Info label
+        self.lbl_status = tk.Label(control_frame, text="Waiting for telemetry...", fg="gray")
+        self.lbl_status.grid(row=3, column=0, columnspan=2, pady=20)
 
+        # Sonar display
+        self.ImgPlaceholder_Sonar = tk.Label(root, bg="black", relief=tk.SUNKEN)
+        self.ImgPlaceholder_Sonar.grid(row=1, column=2, padx=10, pady=10, sticky="nsew")
 
-        # --- URUCHOMIENIE PĘTLI ODŚWIEŻANIA ---
+        # Start loop
         self.update_all_displays()
 
-
-    # --- Control Fcns ---
+    # --- Control Logic ---
     def new_event(self):
+       # send ross cmd
         self.publisher_node.send_cmd(self.shift_state, self.rotate_state)
-    def set_shift_x(self, val:float):
+        
+    def set_shift_x(self, val):
         self.shift_state[0] = val
         self.new_event()
-    def set_shift_y(self, val:float):
+    def set_shift_y(self, val):
         self.shift_state[1] = val
         self.new_event()
-    def set_shift_z(self, val:float):
-        self.shift_state[2] = val
-        self.new_event()
-    def set_rotate_x(self, val:float):
-        self.rotate_state[0] = val
-        self.new_event()
-    def set_rotate_y(self, val:float):
-        self.rotate_state[1] = val
-        self.new_event()
-    def set_rotate_z(self, val:float):
-        self.rotate_state[2] = val
-        self.new_event()
-        
-    
-    # --- Odświeżanie i Wyświetlanie ---
 
+    # --- Display Logic ---
     def update_all_displays(self):
-        """
-        Główna pętla odświeżająca GUI.
-        Wywoływana przez root.after() raz na sekundę (1000 ms).
-        """
         if self.listener_node:
             self.show_img_Sonar()
             self.show_img_Trajectory()
-
-        # Zaplanuj kolejne wywołanie za 1000 milisekund (1 sekunda)
-        self.root.after(1000, self.update_all_displays)
+        
+        # Refreshing
+        self.root.after(100, self.update_all_displays)
         
     def show_img_Sonar(self):
-        """Pobiera i wyświetla obraz z Sonaru (FLS), obsługując skalę szarości."""
-        
-        if hasattr(self.listener_node, 'FLS') and isinstance(self.listener_node.FLS, np.ndarray):
-            fls_np = self.listener_node.FLS
+        if hasattr(self.listener_node, 'FLS') and self.listener_node.FLS is not None:
+            fls_data = self.listener_node.FLS
             
-            # Wymuszamy rozmiar 200x200
-            fls_resized = cv2.resize(fls_np, (200, 200))
+            # Scale
+            fls_resized = cv2.resize(fls_data, (300, 300), interpolation=cv2.INTER_NEAREST)
             
-            # POPRAWKA: Konwersja kolorów dla różnych typów obrazów
+            # What is that? idk - chat did it
             if fls_resized.ndim == 2:
-                # Obraz 1-kanałowy (skala szarości) -> BGR
-                fls_resized = cv2.cvtColor(fls_resized, cv2.COLOR_GRAY2BGR)
-            
-            if fls_resized.ndim == 3 and fls_resized.shape[2] == 3:
-                # BGR -> RGB dla PIL/Tkinter
-                fls_resized = cv2.cvtColor(fls_resized, cv2.COLOR_BGR2RGB)
-            
-            fls_pil = Image.fromarray(fls_resized) 
-            fls_tk = ImageTk.PhotoImage(fls_pil)
-            
-            self.ImgPlaceholder_Sonar.configure(image=fls_tk, text="")
-            self.ImgPlaceholder_Sonar.image = fls_tk # Utrzymanie referencji
+                fls_color = cv2.applyColorMap(fls_resized, cv2.COLORMAP_JET)
+                fls_final = cv2.cvtColor(fls_color, cv2.COLOR_BGR2RGB)
+            else:
+                fls_final = fls_resized
+
+            img_tk = ImageTk.PhotoImage(Image.fromarray(fls_final))
+            self.ImgPlaceholder_Sonar.configure(image=img_tk)
+            self.ImgPlaceholder_Sonar.image = img_tk
 
     def show_img_Trajectory(self):
-        """Rysuje trajektorię na mapie i ją wyświetla."""
-        
-        # 1. POBRANIE POZYCJI
-        if not (hasattr(self.listener_node, 'POSITION') and 
-                isinstance(self.listener_node.POSITION, (list, tuple, np.ndarray)) and
-                len(self.listener_node.POSITION) >= 2):
-             return
+        # Check if data available
+        if not hasattr(self.listener_node, 'POSITION') or self.listener_node.POSITION is None:
+            self.lbl_status.configure(text="Waiting for ROS connection...", fg="red")
+            return
+        # Get pose [x, y, z]
+        pos = self.listener_node.POSITION
 
-        x_m, y_m, *rest = self.listener_node.POSITION
+        if len(pos) < 2: return
         
-        # 2. KONWERSJA METRY -> PIKSELE (Mapowanie X/Y ROS na wiersze/kolumny mapy)
-        x_px = int(self.map_size / 2 - y_m * self.map_scale) 
-        y_px = int(self.map_size / 2 - x_m * self.map_scale) 
+        # Check if it non zero pose
+        if np.all(pos == 0) and self.origin_pos is None:
+            self.lbl_status.configure(text="Waiting for movement...", fg="orange")
+            # return # Odkomentuj jeśli chcesz czekać na ruch
+
+        # --- Set origin to center of map ---
+        if self.origin_pos is None:
+            self.origin_pos = (pos[0], pos[1])
+            self.lbl_status.configure(text="System ARMED. Origin set.", fg="green")
+            print(f"Origin set at: {self.origin_pos}")
+
+        # Calc relative pose
+        rel_x = pos[0] - self.origin_pos[0]
+        rel_y = pos[1] - self.origin_pos[1]
+
+        # Convert to pixels
+        # Centrum mapy to (map_size/2, map_size/2)
+        # ROS X+ (Przód) -> UI Y- (Góra)
+        # ROS Y+ (Lewo)  -> UI X- (Lewo)  <- Tutaj zależy od konwencji, zazwyczaj Y w lewo to X w lewo na ekranie
         
-        current_pos_px = (x_px, y_px)
+        center = self.map_size // 2
         
-        # Ograniczanie do granic mapy
-        if 0 <= x_px < self.map_size and 0 <= y_px < self.map_size:
-            # 3. Rysowanie linii
-            if self.last_pos_px is not None:
-                cv2.line(self.trajectory, self.last_pos_px, current_pos_px, color=(0, 0, 0), thickness=1)
-            
-            # 4. Rysowanie aktualnej pozycji (Czerwony punkt - BGR)
-            cv2.circle(self.trajectory, 
-                       current_pos_px, 
-                       radius = 3, 
-                       color = (0, 0, 255), 
-                       thickness = -1 )
-            
-            # 5. Aktualizacja ostatniej pozycji
-            self.last_pos_px = current_pos_px
+        # map X axis <=> Y axis of robot (left/right)
+        px_x = int(center - (rel_y * self.map_scale)) 
         
-        # 6. Wyświetlanie obrazu
-        traj_pil = Image.fromarray(self.trajectory, 'RGB')
-        traj_tk = ImageTk.PhotoImage(traj_pil)
+        # map Y axis <=> X axis of robot (forward/backward)
+        px_y = int(center - (rel_x * self.map_scale))
+
+        current_px = (px_x, px_y)
+
+        # 1. Draw line
+        if self.last_pos_px is not None:
+            cv2.line(self.map_background, self.last_pos_px, current_px, (0, 0, 0), 1)
         
-        self.ImgPlaceholder_Trajectory.configure(image = traj_tk, text="")
+        self.last_pos_px = current_px
+
+        display_img = self.map_background.copy()
+
+        # draw robot actual pose
+        cv2.circle(display_img, current_px, 5, (0, 0, 255), -1) # BGR: Red
+
+        # Convert to PIL
+        display_rgb = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
+        traj_tk = ImageTk.PhotoImage(Image.fromarray(display_rgb))
+
+        self.ImgPlaceholder_Trajectory.configure(image=traj_tk)
         self.ImgPlaceholder_Trajectory.image = traj_tk
+        
+        # Debug info
+        self.lbl_status.configure(text=f"Pos: X={rel_x:.2f}m Y={rel_y:.2f}m")
 
         
 def main():

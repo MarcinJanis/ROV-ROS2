@@ -12,7 +12,7 @@ from ament_index_python import get_package_share_directory
 def generate_launch_description():
 
     stonefish_share = FindPackageShare('rov_stonefish')
-    passthrough_control = FindPackageShare('rov_passthrough_control')
+    # passthrough_control = FindPackageShare('rov_passthrough_control')
     # wrench_system_share = FindPackageShare('rov_wrench_system')
 
     # Define default configuration paths
@@ -45,21 +45,6 @@ def generate_launch_description():
         parameters=[LaunchConfiguration('config')]
     )
 
-   
-    wrench_system_launch = IncludeLaunchDescription(
-        launch_description_source=PathJoinSubstitution([passthrough_control, 'launch', 'base.launch.py']),
-        launch_arguments={
-            "config": LaunchConfiguration('config')
-        }.items()
-    )
-
-    # wrench_system_launch = IncludeLaunchDescription(
-    #     launch_description_source=PathJoinSubstitution([wrench_system_share, 'launch', 'base.launch.py']),
-    #     launch_arguments={
-    #         "config": LaunchConfiguration('config')
-    #     }.items()
-    # )
-
     tf_imu = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -71,12 +56,6 @@ def generate_launch_description():
         executable="static_transform_publisher",
         arguments=["0", "0", "0", "0", "0", "0", "base_link", "bluerov2/fls"]
     )
-
-    # tf_multibeam = Node(
-    #     package="tf2_ros",
-    #     executable="static_transform_publisher",
-    #     arguments=["0", "0", "0", "0", "0", "0", "stonefish_multibeam", "bluerov2/multibeam"]
-    # )
 
     tf_odometry = Node(
         package="tf2_ros",
@@ -111,8 +90,8 @@ def generate_launch_description():
             'simulation_data': get_package_share_directory('rov_stonefish') + '/data/',
             'scenario_desc': get_package_share_directory('rov_stonefish') + '/scenarios/windturbine_bluerov2.scn',
             'simulation_rate': '30.0',
-            'window_res_x': '1720',
-            'window_res_y': '980',
+            'window_res_x': '1024', # 'window_res_x': '1720',
+            'window_res_y': '700', # window_res_y': '980',
             'rendering_quality': 'medium',
         }.items()
     )
@@ -128,7 +107,7 @@ def generate_launch_description():
         stonefish_timer,
         thruster_manager_node,
         description_timer,
-        wrench_system_launch,
+        # wrench_system_launch,
         rviz_timer,
         tf_imu,
         tf_fls,
