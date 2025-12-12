@@ -30,11 +30,12 @@ class MasterController:
 
     self.root_dir = general_directory
     self.act_dir = None
+    self.seq_id = None
     
     os.makedirs(self.root_dir, exist_ok=True)
     
   def setup(self, determinist = False: bool, scenario_pth = None: str, mv_count = 0: int, boundaries = None: dict, seq_id):
-
+      self.seq_id = seq_id
       self.act_dir = os.path.join(self.root_dir, f'seq_{seq_id}')
   
       self.determinist = determinist
@@ -90,6 +91,7 @@ class MasterController:
 def sequence_exec(self):
         """main exec loop"""
 
+        data_idx = 0
         #TODO:
         # > init csv to save pos, time steps etc
         # > init dir to save fls
@@ -97,7 +99,7 @@ def sequence_exec(self):
 
 
 
-        print("[Sequence] Starting sequence execution...")
+        print(f"[Sequence: {self.seq_id}] Starting sequence execution...")
         
         start_time_global = time.time()
         action_num = len(self.time)
@@ -120,7 +122,9 @@ def sequence_exec(self):
 
                 # 2. Get obs
                 result_obs = self.get_obs()
-
+                if result_obs:
+                  data_idx += 1
+                  
                 # 3. Wait for nect iter
                 time.sleep(self.dt)
 
@@ -128,9 +132,10 @@ def sequence_exec(self):
             current_step_idx += 1
         
         # Finish execution
-        print("[Sequence] Sequence finished. Stopping robot.")
+        print(f"[Sequence {self.seq_id}] Sequence {self.seq} finished. Stopping robot.")
         self.pub_node.send_cmd([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
-
+        print(f"[Sequence {self.seq_id}] Time stamps amount: {data_idx}.")
+  
     def get_obs(self):
         if self.sub_node.POSITION is None:
             return None
