@@ -110,6 +110,8 @@ class StonefishPublisher(Node):
         super().__init__('stonefish_publisher')
         
         self.publisher = self.create_publisher(WrenchStamped, '/joy_wrench_stmp', 10)
+        # self.publisher = self.create_publisher(WrenchStamped, '/thrusters/STONEFISH', 10)
+
 
     def send_cmd(self, cmd_shift: list, cmd_rotate: list): 
 

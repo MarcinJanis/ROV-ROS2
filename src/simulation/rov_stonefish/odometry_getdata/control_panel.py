@@ -1,12 +1,12 @@
-import sys 
+import sys
 from threading import Thread
 import rclpy
 from rclpy.node import Node
-import rclpy.executors 
-import math 
+import rclpy.executors
+import math
 
 import ros_nodes
-import numpy as np 
+import numpy as np
 import cv2
 
 from PIL import Image, ImageTk
@@ -18,6 +18,8 @@ import os
 os.environ['DISPLAY'] = ':23'
 
 # --- Helper Function: Quaternion to Euler ---
+
+
 def euler_from_quaternion(x, y, z, w):
     """
     Converts quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw) in radians.
@@ -35,7 +37,8 @@ def euler_from_quaternion(x, y, z, w):
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw_z = math.atan2(t3, t4)
     
-    return roll_x, pitch_y, yaw_z # returns radians
+    return roll_x, pitch_y, yaw_z  # returns radians
+
 
 class Panel:
     def __init__(self, root, publisher_node, listener_node):
@@ -44,7 +47,7 @@ class Panel:
         self.listener_node = listener_node
 
         self.root.title("ROV Control Panel")
-        self.root.geometry("900x700") # Increased height for new buttons
+        self.root.geometry("900x700")  # Increased height for new buttons
 
         # --- Trajectory State ---
         self.map_size = 300     
@@ -121,21 +124,21 @@ class Panel:
         # Row 4: Yaw Left / Yaw Right (Yaw +/-)
         btn_yaw_left = tk.Button(control_frame, text='↺ Turn Left', bg="#e2e3e5", height=2)
         btn_yaw_left.grid(row=4, column=0, sticky="ew", padx=5, pady=5)
-        btn_yaw_left.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(self.power)) # +Yaw = Left
+        btn_yaw_left.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(self.power))  # +Yaw = Left
         btn_yaw_left.bind('<ButtonRelease-1>', lambda e: self.set_rotate_z(0.0))
 
         btn_yaw_right = tk.Button(control_frame, text='Turn Right ↻', bg="#e2e3e5", height=2)
         btn_yaw_right.grid(row=4, column=1, sticky="ew", padx=5, pady=5)
-        btn_yaw_right.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(-self.power)) # -Yaw = Right
+        btn_yaw_right.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(-self.power))  # -Yaw = Right
         btn_yaw_right.bind('<ButtonRelease-1>', lambda e: self.set_rotate_z(0.0))
 
         # --- B. Telemetry Table ---
         telemetry_frame = tk.LabelFrame(middle_frame, text=" Live Data ", font=('Arial', 9))
         telemetry_frame.grid(row=1, column=0, sticky="ew")
-        telemetry_frame.columnconfigure(0, weight=1) # Label Col
-        telemetry_frame.columnconfigure(1, weight=1) # Value Col
-        telemetry_frame.columnconfigure(2, weight=1) # Label Col
-        telemetry_frame.columnconfigure(3, weight=1) # Value Col
+        telemetry_frame.columnconfigure(0, weight=1)  # Label Col
+        telemetry_frame.columnconfigure(1, weight=1)  # Value Col
+        telemetry_frame.columnconfigure(2, weight=1)  # Label Col
+        telemetry_frame.columnconfigure(3, weight=1)  # Value Col
 
         # Position Data
         tk.Label(telemetry_frame, text="Pos X:").grid(row=0, column=0, sticky="e")
@@ -172,21 +175,23 @@ class Panel:
 
     # --- Control Logic ---
     def new_event(self):
-       # Send command to ROS node
-       self.publisher_node.send_cmd(self.shift_state, self.rotate_state)
-       
+        # Send command to ROS node
+        self.publisher_node.send_cmd(self.shift_state, self.rotate_state)
+    
     def set_shift_x(self, val):
         self.shift_state[0] = val
         self.new_event()
+
     def set_shift_y(self, val):
         self.shift_state[1] = val
         self.new_event()
+
     def set_shift_z(self, val):
         self.shift_state[2] = val
         self.new_event()
-    
+
     def set_rotate_z(self, val):
-        self.rotate_state[2] = val # Yaw index in [r, p, y]
+        self.rotate_state[2] = val  # Yaw index in [r, p, y]
         self.new_event()
 
     # --- Display Logic ---
@@ -195,7 +200,7 @@ class Panel:
             self.show_img_Sonar()
             self.show_img_Trajectory()
             self.update_telemetry_text()
-        
+ 
         # Refresh rate: 100ms
         self.root.after(100, self.update_all_displays)
 
@@ -215,7 +220,7 @@ class Panel:
             if len(q) >= 4:
                 # Quaternion -> Euler (rad)
                 r, p, y = euler_from_quaternion(q[0], q[1], q[2], q[3])
-                
+             
                 # rad -> degrees
                 r_deg = math.degrees(r)
                 p_deg = math.degrees(p)
@@ -230,7 +235,7 @@ class Panel:
         if hasattr(self.listener_node, 'FLS') and self.listener_node.FLS is not None:
             fls_data = self.listener_node.FLS
             fls_resized = cv2.resize(fls_data, (300, 300), interpolation=cv2.INTER_NEAREST)
-            
+        
             if fls_resized.ndim == 2:
                 fls_color = cv2.applyColorMap(fls_resized, cv2.COLORMAP_JET)
                 fls_final = cv2.cvtColor(fls_color, cv2.COLOR_BGR2RGB)
@@ -245,10 +250,11 @@ class Panel:
         """Draws top-down trajectory map."""
         if not hasattr(self.listener_node, 'POSITION') or self.listener_node.POSITION is None:
             return
-        
+
         pos = self.listener_node.POSITION
-        if len(pos) < 2: return
-        
+        if len(pos) < 2:
+            return
+
         # Origin Setup
         if self.origin_pos is None:
             self.origin_pos = (pos[0], pos[1])
@@ -270,9 +276,9 @@ class Panel:
         # Draw Line (History)
         if self.last_pos_px is not None:
             cv2.line(self.map_background, self.last_pos_px, current_px, (0, 0, 0), 1)
-        
+ 
         self.last_pos_px = current_px
-        
+  
         # Draw Cursor (Current)
         display_img = self.map_background.copy()
         cv2.circle(display_img, current_px, 5, (0, 0, 255), -1) 
@@ -282,13 +288,15 @@ class Panel:
 
         self.ImgPlaceholder_Trajectory.configure(image=traj_tk)
         self.ImgPlaceholder_Trajectory.image = traj_tk
-        
+
+
 def main():
     rclpy.init()
     control_node = ros_nodes.StonefishPublisher()
-    listener_node = ros_nodes.StonefishSubscriber() 
+    listener_node = ros_nodes.StonefishSubscriber()
 
-    executor = rclpy.executors.SingleThreadedExecutor()
+    # ZMIANA TUTAJ: Użyj MultiThreadedExecutor
+    executor = rclpy.executors.MultiThreadedExecutor()
     executor.add_node(control_node)
     executor.add_node(listener_node)
 
@@ -296,8 +304,8 @@ def main():
     spin_thread.start()
 
     root = tk.Tk()
-    master = Panel(root, control_node, listener_node) 
-    
+    master = Panel(root, control_node, listener_node)
+
     try:
         root.mainloop()
     finally:
@@ -307,7 +315,7 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
+
 #____
 
 # import sys 

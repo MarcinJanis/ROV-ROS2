@@ -43,15 +43,21 @@
 	
 
 	<!-- seabed -->
-	<static name="Seabed" type="plane">
+	<static name="Bottom" type="terrain">
+		<height_map filename="seabed_moon.png"/>
+		<dimensions scalex="0.1" scaley="0.1" height="50.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
+		<material name="Rock"/>
+		<look name="cliff"/>
+		<world_transform xyz="0.0 0.0 60.0" rpy="0.0 0.0 0.0"/>
+	</static>
+
+	<!-- <static name="Seabed" type="plane">
     	<material name="Rock"/>
     	<look name="seabed"/>
     	<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 25.0"/>
-	</static>
+	</static> -->
 	
-	
-
-	<static name="Cliff" type="model">
+	<!-- <static name="Cliff" type="model">
 		<physical>
 			<mesh filename="cliff.obj" scale="4.0"/>
 			<origin rpy="3.14 0.0 0.0" xyz="4.0 0.0 2.0"/>
@@ -59,11 +65,11 @@
 		<material name="Rock"/>
 		<look name="cliff"/>
 		<world_transform rpy="0.0 0.0 1.6" xyz="0.0 -30.0 30.0"/>
-	</static>
+	</static> -->
     
     <include file="$(find rov_stonefish)/scenarios/bluerov2.scn">
 		<arg name="vehicle_name" value="bluerov2"/>
-		<arg name="position" value="0 0 10"/>
-		<arg name="orientation" value="0.0 0.0 1.2"/>
+		<arg name="position" value="0 0 0"/>
+		<arg name="orientation" value="0.0 0.0 0"/>
 	</include>
 </scenario>
