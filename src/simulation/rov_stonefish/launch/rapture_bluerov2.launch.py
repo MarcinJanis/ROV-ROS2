@@ -46,13 +46,13 @@ def generate_launch_description():
     tf_imu = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0", "0", "0", "0", "0", "0", "stonefish_world", "bluerov2/imu_filter"]
+        arguments=["0", "0", "0", "0", "0", "3.14", "base_link", "bluerov2/imu_filter"] 
     )
 
     tf_fls = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0", "0", "0", "0", "0", "0", "base_link", "bluerov2/fls"]
+        arguments=["0.2", "0", "-0.1", "0", "0.26", "0", "base_link", "bluerov2/fls"]
     )
 
     tf_odometry = Node(
@@ -70,7 +70,7 @@ def generate_launch_description():
     tf_dvl = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0", "0", "0", "0", "0", "0", "base_link", "bluerov2/dvl"]
+        arguments=["0", "0", "0", "0", "0", "3.1416", "base_link", "bluerov2/dvl"]
     )
 
     rviz_node = Node(
