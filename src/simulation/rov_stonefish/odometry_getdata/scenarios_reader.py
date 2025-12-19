@@ -1,213 +1,232 @@
 import numpy as np
-import math
-import os 
-import random 
+import os
+import random
 import csv
-import cv2  
-import xml.etree.ElementTree as ET
-
+import cv2
 import time
-
-import ros_nodes
+import xml.etree.ElementTree as ET
 import rclpy
-from threading import Thread
 
 class MasterController:
-  '''
-  Reads test scenario from xml or generates random moves and send to control node. 
-  '''
-  def __init__(self, publisher_node, listener_node, general_dir):
-    self.determinist = False
+    '''
+    Reads test scenario from xml or generates random moves and sends to control node.
+    '''
+    def __init__(self, publisher_node, listener_node, general_dir):
+        self.determinist = False
 
-    self.pub_node = publisher_node
-    self.sub_node = listener_node
-    
-    # control loop config 
-    self.control_rate = 20.0  
-    self.dt = 1.0 / self.control_rate
-
-    self.time = []
-    self.action = []
-    self.value = []
-
-    self.root_dir = general_directory
-    self.act_dir = None
-    self.seq_id = None
-    
-    os.makedirs(self.root_dir, exist_ok=True)
-    
-  def setup(self, determinist = False: bool, scenario_pth = None: str, mv_count = 0: int, boundaries = None: dict, seq_id):
-      self.seq_id = seq_id
-      self.act_dir = os.path.join(self.root_dir, f'seq_{seq_id}')
-  
-      self.determinist = determinist
-      self.boundaries = boundaries 
-
-      if self.determinist:
-        ''' to read elements from xml with struct
-        <cmd>
-          <time>10</time> <!-- after 10 s from simulation start -->
-          <action> forward </action> <!-- forward -> forward/backward; side -> left/right; rotation -> rotate right/left; depth -->
-          <value> 5 </value> <!-- value in [N] / [Nm]
-        </cmd>
-
-        '''
-        tree = ET.parse(scenario_pth)
-        root = tree.getroot()
-        self.time = [act.get('time') for act in root.findall('Cmd')]
-        self.action = [act.get('action') for act in root.findall('Cmd')]
-        self.value = [act.get('value') for act in root.findall('Cmd')]
-
-      else: 
-        '''
-        boundaries = {
-          't_min':1.0 # [s] min time of duration of some action
-          't_max':10.0 # [s] max time of duration of some action
-          'v_min': 1 # min value for some action
-          'v_max': 5 # max value for some action
-        }
-        '''
-        time = np.array([random.uniform(boundaries['t_min'], boundaries['t_max']) for _ in range(mv_count)], dtype = np.float32)
-        actions_list = ['forward', 'side', 'rotation', 'depth']
+        self.pub_node = publisher_node
+        self.sub_node = listener_node
         
-        self.time = np.cumsum(time)
-        self.action = [action_list[random.randint(0, len(action_list)] for _ in range(mv_count)]
-        self.value = [random.uniform(boundaries['v_min'], boundaries['v_max']) for _ in range(mv_count)]
-       
-  def _map_action_to_wrench(self, action, value):
-        """Pomocnicza funkcja zamieniająca 'forward' na wektory sił"""
-        cmd_shift = [0.0, 0.0, 0.0]  # x, y, z
-        cmd_rotate = [0.0, 0.0, 0.0] # roll, pitch, yaw
+        # Control loop configuration
+        self.control_rate = 20.0  
+        self.dt = 1.0 / self.control_rate
 
+        self.root_dir = general_dir
+        self.act_dir = None
+        self.seq_id = None
+        self.img_dir = None
+        
+        # Trajectories list
+        self.durations = []     # Duration of each action [s] (ZMIANA: przechowujemy czas trwania, a nie harmonogram)
+        self.actions = []       # Actions
+        self.values = []        # Values (force/torque)
+
+        os.makedirs(self.root_dir, exist_ok=True)
+        
+    def setup(self, seq_id, determinist: bool = False, scenario_pth: str = None, 
+              mv_count: int = 0, boundaries: dict = None):
+        """
+        Generate trajectory
+        """
+
+        self.seq_id = seq_id
+        self.act_dir = os.path.join(self.root_dir, f'seq_{seq_id}')
+        self.img_dir = os.path.join(self.act_dir, 'fls')
+        
+        os.makedirs(self.act_dir, exist_ok=True)
+        os.makedirs(self.img_dir, exist_ok=True)
+    
+        self.determinist = determinist
+
+        if self.determinist:
+            # Read from XML
+            if not scenario_pth or not os.path.exists(scenario_pth):
+                raise FileNotFoundError("Scenario file not found provided.")
+            tree = ET.parse(scenario_pth)
+            root = tree.getroot()
+            
+            self.durations = [float(act.find('time').text) for act in root.findall('cmd')]
+            self.actions = [act.find('action').text for act in root.findall('cmd')]
+            self.values = [float(act.find('value').text) for act in root.findall('cmd')]
+
+        else: 
+            available_actions = [
+                'forward', 'backward', 
+                'slide_left', 'slide_right', 
+                'rotate_left', 'rotate_right', 
+                'depth_change',
+                'circle_left', 'circle_right'
+            ]
+            
+            # Generate duration time for each move
+            self.durations = [random.uniform(boundaries['t_min'], boundaries['t_max']) 
+                              for _ in range(mv_count)]
+            
+            self.actions = [random.choice(available_actions) for _ in range(mv_count)]
+            self.values = []
+
+            for action in self.actions:
+                if 'rotate' in action:
+                    val = random.uniform(boundaries['T_min'], boundaries['T_max'])
+                elif 'circle' in action:
+                    val = random.uniform(boundaries['F_min'], boundaries['F_max'])
+                else:
+                    val = random.uniform(boundaries['F_min'], boundaries['F_max'])
+                
+                self.values.append(val)
+
+        # CSV init
+        self.csv_file_path = os.path.join(self.act_dir, 'sequence.csv')
+        with open(self.csv_file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['step_idx', 'timestamp', 
+                             'pos_x', 'pos_y', 'pos_z', 
+                             'quat_x', 'quat_y', 'quat_z', 'quat_w',
+                            ])
+
+    def _map_action_to_wrench(self, action, value):
+
+        # cmd_shift: [surge (x), sway (y), heave (z)]
+        # cmd_rotate: [roll, pitch, yaw]
+        cmd_shift = [0.0, 0.0, 0.0] 
+        cmd_rotate = [0.0, 0.0, 0.0] 
+
+        val = float(value)
+
+        # Simple movements
         if action == 'forward':
-            cmd_shift[0] = float(value) # Forward/ backward
-        elif action == 'side':
-            cmd_shift[1] = float(value) # Right/Left
-        elif action == 'depth':
-            cmd_shift[2] = float(value) # Up/down
-        elif action == 'rotation':
-            cmd_rotate[2] = float(value) # Yaw
-        
+            cmd_shift[0] = val
+        elif action == 'backward':
+            cmd_shift[0] = -val
+        elif action == 'slide_left':
+            cmd_shift[1] = val # Check coordinate system (NED vs ENU)
+        elif action == 'slide_right':
+            cmd_shift[1] = -val
+        elif action == 'depth_change':
+            cmd_shift[2] = val 
+        elif action == 'rotate_right':
+            cmd_rotate[2] = val
+        elif action == 'rotate_left':
+            cmd_rotate[2] = -val
+            
+        elif action == 'circle_right':
+            cmd_shift[0] = val         
+            cmd_rotate[2] = boundaries['T_max']
+        elif action == 'circle_left':
+            cmd_shift[0] = val
+            cmd_rotate[2] = boundaries['T_max']
+
         return cmd_shift, cmd_rotate
     
-def sequence_exec(self):
-        """main exec loop"""
-
-        data_idx = 0
-        #TODO:
-        # > init csv to save pos, time steps etc
-        # > init dir to save fls
-        # > make save mechanizm (in self.act_dir )
-
-
-
-        print(f"[Sequence: {self.seq_id}] Starting sequence execution...")
-        
-        start_time_global = time.time()
-        action_num = len(self.time)
-        
-        current_step_idx = 0
-        
-        while current_step_idx < action_num:
-            target_end_time = self.time[current_step_idx] 
-            action_type = self.action[current_step_idx]
-            action_val = self.value[current_step_idx]
-
-            print(f"[Action: {current_step_idx}]: {action_type} with val {action_val} until t={target_end_time}")
-
-            # Keep action until timeout
-            while (time.time() - start_time_global) < target_end_time:
-                
-                # 1. Send cmd cyclic
-                shift, rotate = self._map_action_to_wrench(action_type, action_val)
-                self.pub_node.send_cmd(shift, rotate)
-
-                # 2. Get obs
-                result_obs = self.get_obs()
-                if result_obs:
-                  data_idx += 1
-                  
-                # 3. Wait for nect iter
-                time.sleep(self.dt)
-
-            # Next step
-            current_step_idx += 1
-        
-        # Finish execution
-        print(f"[Sequence {self.seq_id}] Sequence {self.seq} finished. Stopping robot.")
-        self.pub_node.send_cmd([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
-        print(f"[Sequence {self.seq_id}] Time stamps amount: {data_idx}.")
-  
     def get_obs(self):
         if self.sub_node.POSITION is None:
             return None
-        else 
-            return True
-        # --- Tu masz dostęp do danych z Listenera ---
-        # Listener actualise data in seperate thread        
-        # pos = self.sub_node.POSITION
-        # vel = self.sub_node.VELOCITY
-        # img = self.sub_node.FLS
-        # ts = self.sub_node.TIME_STAMP
-
-        # Dodać flagę zeby zapisywało tylko jak przyjdą nowe pomiary 
-
-
-
-
-#   def main(args=None):
-#     rclpy.init(args=args)
-
-#     # 1. Tworzenie Node'ów
-#     pub_node = StonefishPublisher()
-#     sub_node = StonefishSubscriber()
-
-#     # 2. Executor do obsługi ROSa w tle
-#     # MultiThreadedExecutor jest bezpieczniejszy przy wielu callbackach
-#     executor = rclpy.executors.MultiThreadedExecutor()
-#     executor.add_node(pub_node)
-#     executor.add_node(sub_node)
-
-#     # 3. Uruchomienie ROSa w osobnym wątku
-#     # Dzięki daemon=True wątek zamknie się sam, gdy zamknie się program główny
-#     ros_thread = Thread(target=executor.spin, daemon=True)
-#     ros_thread.start()
-
-#     # 4. Inicjalizacja Twojego Master Controllera
-#     controller = MasterController(pub_node, sub_node)
-    
-#     # Przykładowy setup (symulacja danych z setupu deterministycznego/losowego)
-#     # Ręcznie ustawiam dane, żeby pokazać jak to zadziała z pętlą:
-#     # Akcja 1: do 3 sekundy, Forward
-#     # Akcja 2: do 6 sekundy, Rotate
-#     controller.time = [3.0, 6.0] 
-#     controller.action = ['forward', 'rotation']
-#     controller.value = [20.0, 5.0]
-
-#     try:
-#         # 5. Uruchomienie głównej logiki scenariusza
-#         # To zablokuje główny wątek dopóki scenariusz się nie skończy
-#         # W TYM SAMYM CZASIE 'ros_thread' w tle odbiera dane i aktualizuje sub_node
-#         controller.sequence_exec()
-
-#     except KeyboardInterrupt:
-#         print("Interrupted by user.")
-    
-#     finally:
-#         # Sprzątanie
-#         print("Cleaning up...")
-#         # Zatrzymanie robota przed wyjściem
-#         pub_node.send_cmd([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
         
-#         executor.shutdown()
-#         pub_node.destroy_node()
-#         sub_node.destroy_node()
-#         rclpy.shutdown()
+        return {
+            'position_full': self.sub_node.POSITION, # [x,y,z, qx,qy,qz,qw]
+            'fls': self.sub_node.FLS,                # fls img
+            'timestamp': self.sub_node.TIME_STAMP
+        }
 
-# if __name__ == '__main__':
-#     main()
-# Jak to działa (Wyjaśnienie):
-  
+    def save_step_data(self, step_idx, action_type, shift, rotate, obs_data):
+        
+        # Unpacked data from dict
+        timestamp = obs_data.get('timestamp', 0.0)
+        pos_full = obs_data.get('position_full', np.zeros(7))
+        fls_img = obs_data.get('fls', None)
+        
+        # Separate pos (quaterions)
+        pos_x, pos_y, pos_z = pos_full[0], pos_full[1], pos_full[2]
+        quat_x, quat_y, quat_z, quat_w = pos_full[3], pos_full[4], pos_full[5], pos_full[6]
 
+        # 1. Write data to csv
+        with open(self.csv_file_path, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                step_idx,
+                timestamp, 
+                pos_x, pos_y, pos_z,                     # Pozycja
+                quat_x, quat_y, quat_z, quat_w           # Orientacja
+                # action_type,                       
+                # shift[0], shift[1], shift[2], rotate[2]  
+            ])
+            
+        # FLS image save
+        if fls_img is not None and fls_img.size > 0:
+            fls_img_name = f"{step_idx}.png"
+            full_img_path = os.path.join(self.img_dir, fls_img_name)
+            try:
+                cv2.imwrite(full_img_path, fls_img)
+            except Exception as e:
+                print(f"[Error] Failed to save image: {e}")
 
+    def sequence_exec(self, target_samples_num):
+        """
+        Main execution loop based on sample count.
+        Cycles through actions if they run out before target_samples_num is reached.
+        """
 
+        samples_collected = 0
+        action_idx_pointer = 0 
+        
+        print(f"[Sequence: {self.seq_id}] Starting execution. Target samples: {target_samples_num}")
+        
+        # Main loop
+        while samples_collected < target_samples_num:
+            
+            current_action_idx = action_idx_pointer % len(self.actions)
+            
+            action_type = self.actions[current_action_idx]
+            action_val = self.values[current_action_idx]
+            action_duration = self.durations[current_action_idx]
+
+            print(f"[Action Loop] Action: {action_type} (val={action_val:.2f}) for {action_duration:.2f}s. "
+                  f"Samples: {samples_collected}/{target_samples_num}")
+
+          
+            action_start_time = time.time()
+            
+            while (time.time() - action_start_time) < action_duration:
+                loop_start = time.time()
+                
+                # 1. Map and send command
+                shift, rotate = self._map_action_to_wrench(action_type, action_val)
+                self.pub_node.send_cmd(shift, rotate)
+
+                # 2. Get data
+                obs = self.get_obs()
+                
+                # 3. Write data & Increment sample counter
+                if obs:
+                    self.save_step_data(samples_collected, action_type, shift, rotate, obs)
+                    samples_collected += 1
+                    
+                    # Log postępu co 100 próbek (opcjonalnie)
+                    if samples_collected % 100 == 0:
+                         print(f" -> Collected {samples_collected} samples...")
+
+                    # Exit condition
+                    if samples_collected >= target_samples_num:
+                        break
+                  
+                # Wait for next iter to keep update frequecny 
+                elapsed = time.time() - loop_start
+                if elapsed < self.dt:
+                    time.sleep(self.dt - elapsed)
+
+            action_idx_pointer += 1
+        
+        # Finish task
+        print(f"[Sequence {self.seq_id}] Finished. Stopping robot.")
+        self.pub_node.send_cmd([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+        print(f"[Sequence {self.seq_id}] Total samples collected: {samples_collected}.")

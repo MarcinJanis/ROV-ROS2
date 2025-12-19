@@ -41,8 +41,6 @@ class StonefishSubscriber(Node):
         self.init = False
         self.t0_odometry_f = 0
 
-        # self.VISU_FLAG = True
-
         # Aproximate Time Synchronizer - used to synchronize msgs into package
         self.ats = ApproximateTimeSynchronizer(
                 [self.sub_odometry, self.sub_FLS_image],  #, self.sub_GPS, self.sub_FLS_image], # Subs list
@@ -109,11 +107,8 @@ class StonefishSubscriber(Node):
 class StonefishPublisher(Node):
     def __init__(self):
         super().__init__('stonefish_publisher')
-        
         self.publisher = self.create_publisher(WrenchStamped, '/joy_wrench_stmp', 10)
-        # self.publisher = self.create_publisher(WrenchStamped, '/thrusters/STONEFISH', 10)
-
-
+    
     def send_cmd(self, cmd_shift: list, cmd_rotate: list): 
 
         msg = WrenchStamped()
