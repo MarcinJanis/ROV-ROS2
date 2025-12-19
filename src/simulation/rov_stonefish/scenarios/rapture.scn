@@ -39,6 +39,7 @@
 	<looks>
 		<look name="tank" rgb="0.9 0.9 0.9" roughness="0.9"/>
 		<look name="cliff" gray="1.0" roughness="0.5" texture="cliff.jpg"/>
+		<look name="seabed" gray="1.0" roughness="0.9"/>
 	</looks>
 	
 
@@ -47,8 +48,8 @@
 		<height_map filename="seabed_moon.png"/>
 		<dimensions scalex="0.1" scaley="0.1" height="50.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
 		<material name="Rock"/>
-		<look name="cliff"/>
-		<world_transform xyz="0.0 0.0 60.0" rpy="0.0 0.0 0.0"/>
+		<look name="seabed"/>
+		<world_transform xyz="0.0 0.0 30.0" rpy="0.0 0.0 0.0"/>
 	</static>
 
 	<!-- <static name="Seabed" type="plane">
@@ -69,7 +70,7 @@
     
     <include file="$(find rov_stonefish)/scenarios/bluerov2.scn">
 		<arg name="vehicle_name" value="bluerov2"/>
-		<arg name="position" value="0 0 0"/>
+		<arg name="position" value="0.0 0.0 0.0"/>
 		<arg name="orientation" value="0.0 0.0 0"/>
 	</include>
 </scenario>

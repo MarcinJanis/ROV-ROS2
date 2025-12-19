@@ -321,17 +321,27 @@
 						   altitude_topic="/$(arg vehicle_name)/altitude"/>
 		</sensor>
 
-		<sensor name="fls" rate="2.0" type="fls">
-			<!--<specs beams="480" bins="240" horizontal_fov="120.0" vertical_fov="30.0"/>-->
-			<specs beams="480" bins="512" horizontal_fov="120.0" vertical_fov="30.0"/>
-			<settings range_min="0.5" range_max="100.0" gain="1.0"/>
-			<noise multiplicative="0" additive="0"/> <!-- 0.05, 0.01-->
+		<!-- Teledyne BlueVew 2D Imaging Sonar P900-130
+			Operating freq = 900 kHz
+			rate up to 15 Hz 
+			FOV = 130 deg
+			max range 100 m 
+			optimum range 2 - 60 m
+			Beam width 1 deg x 20 deg
+			nbeams 768
+			beam spaceing 0.18 deg
+			range resolution 1 in 
+		
+		-->
+		<sensor name="fls" rate="15.0" type="fls">
+			<specs beams="768" bins="800" horizontal_fov="130.0" vertical_fov="20.0"/>		
+			<settings range_min="0.1" range_max="30.0" gain="1.0"/>	
+			<noise multiplicative="0.1" additive="0.2"/>
 			<display colormap="hot"/>
-			<!-- <origin xyz="0.0 0.0 0.3" rpy="1.047 0.0 1.571"/> --> 
-			<origin xyz="0.2 0.0 -0.1" rpy="0.0 0.26 0.0"/>
+			<origin xyz="0.2 0.0 0.1" rpy="0.0 0.4 0.0"/>
 			<link name="base_link"/>
 			<ros_publisher topic="/$(arg vehicle_name)/fls"/>
-		</sensor> 
+		</sensor>
 
 
 		<!-- Bluerov 6 thrusters XY  -->
@@ -350,3 +360,17 @@
 		<ros_publisher thrusters="/$(arg vehicle_name)/thruster_state"/>
 	</robot>
 </scenario>
+
+
+
+<!--<sensor name="fls" rate="2.0" type="fls">
+			<specs beams="480" bins="240" horizontal_fov="120.0" vertical_fov="30.0"/>
+			<specs beams="480" bins="512" horizontal_fov="120.0" vertical_fov="30.0"/>
+			<settings range_min="0.5" range_max="20.0" gain="1.0"/>
+			<noise multiplicative="0.05" additive="0.01"/>
+			<display colormap="hot"/>
+			<origin xyz="0.0 0.0 0.3" rpy="1.047 0.0 1.571"/>
+			<origin xyz="0.2 0.0 -0.1" rpy="0.0 0.1 0.0"/>
+			<link name="base_link"/>
+			<ros_publisher topic="/$(arg vehicle_name)/fls"/>
+		</sensor> -->

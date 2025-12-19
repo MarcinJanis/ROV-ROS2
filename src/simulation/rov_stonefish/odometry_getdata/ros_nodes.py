@@ -33,6 +33,7 @@ class StonefishSubscriber(Node):
         # self.sub_GPS = Subscriber(self, NavSatFix, '/bluerov2/gps')   
         self.sub_odometry = Subscriber(self, Odometry, '/bluerov2/odometry')
         self.sub_FLS_image = Subscriber(self, Image, '/bluerov2/fls/image')
+        # self.sub_FLS_image = Subscriber(self, Image, '/bluerov2/fls/display')
         # self.sub_multibeam = Subscriber(self, LaserScan, '/bluerov2/multibeam')
 
         self.bridge = CvBridge()
@@ -44,7 +45,7 @@ class StonefishSubscriber(Node):
 
         # Aproximate Time Synchronizer - used to synchronize msgs into package
         self.ats = ApproximateTimeSynchronizer(
-                [self.sub_odometry,  self.sub_FLS_image], #, self.sub_GPS, self.sub_FLS_image], # Subs list
+                [self.sub_odometry, self.sub_FLS_image],  #, self.sub_GPS, self.sub_FLS_image], # Subs list
                 QUEUE_SIZE,                   # Queue size
                 SLOP_TIME,                    # Time tolerance
                 allow_headerless=False        # Discard headless msgs

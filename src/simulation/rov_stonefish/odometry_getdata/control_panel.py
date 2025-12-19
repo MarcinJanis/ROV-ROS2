@@ -59,7 +59,9 @@ class Panel:
         # --- Control State ---
         self.shift_state = [0.0, 0.0, 0.0]  # Linear: x, y, z
         self.rotate_state = [0.0, 0.0, 0.0] # Angular: r, p, y
-        self.power = 40.0 
+        self.power_lin = 70.0 
+        self.power_ang = 0.2
+
 
         # --- Layout Configuration ---
         self.root.columnconfigure(0, weight=1)
@@ -90,46 +92,46 @@ class Panel:
         # Row 0: Forward (Surge +)
         btn_fwd = tk.Button(control_frame, text='▲\nForward', bg="#d1e7dd", height=2)
         btn_fwd.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        btn_fwd.bind('<ButtonPress-1>', lambda e: self.set_shift_x(self.power))
+        btn_fwd.bind('<ButtonPress-1>', lambda e: self.set_shift_x(self.power_lin))
         btn_fwd.bind('<ButtonRelease-1>', lambda e: self.set_shift_x(0.0))
 
         # Row 1: Left / Right (Sway +/-)
         btn_left = tk.Button(control_frame, text='◀ Left', bg="#d1e7dd", height=2)
         btn_left.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
-        btn_left.bind('<ButtonPress-1>', lambda e: self.set_shift_y(self.power)) 
+        btn_left.bind('<ButtonPress-1>', lambda e: self.set_shift_y(self.power_lin)) 
         btn_left.bind('<ButtonRelease-1>', lambda e: self.set_shift_y(0.0))
 
         btn_right = tk.Button(control_frame, text='Right ▶', bg="#d1e7dd", height=2)
         btn_right.grid(row=1, column=1, sticky="ew", padx=5, pady=5)
-        btn_right.bind('<ButtonPress-1>', lambda e: self.set_shift_y(-self.power))
+        btn_right.bind('<ButtonPress-1>', lambda e: self.set_shift_y(-self.power_lin))
         btn_right.bind('<ButtonRelease-1>', lambda e: self.set_shift_y(0.0))
 
         # Row 2: Backward (Surge -)
         btn_back = tk.Button(control_frame, text='▼\nBackward', bg="#d1e7dd", height=2)
         btn_back.grid(row=2, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        btn_back.bind('<ButtonPress-1>', lambda e: self.set_shift_x(-self.power))
+        btn_back.bind('<ButtonPress-1>', lambda e: self.set_shift_x(-self.power_lin))
         btn_back.bind('<ButtonRelease-1>', lambda e: self.set_shift_x(0.0))
         
         # Row 3: Up / Down (Heave +/-)
         btn_up = tk.Button(control_frame, text='⇪ UP (Z+)', bg="#fff3cd", height=2)
         btn_up.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
-        btn_up.bind('<ButtonPress-1>', lambda e: self.set_shift_z(self.power))
+        btn_up.bind('<ButtonPress-1>', lambda e: self.set_shift_z(self.power_lin))
         btn_up.bind('<ButtonRelease-1>', lambda e: self.set_shift_z(0.0))
 
         btn_down = tk.Button(control_frame, text='⇩ DOWN (Z-)', bg="#fff3cd", height=2)
         btn_down.grid(row=3, column=1, sticky="ew", padx=5, pady=5)
-        btn_down.bind('<ButtonPress-1>', lambda e: self.set_shift_z(-self.power))
+        btn_down.bind('<ButtonPress-1>', lambda e: self.set_shift_z(-self.power_lin))
         btn_down.bind('<ButtonRelease-1>', lambda e: self.set_shift_z(0.0))
 
         # Row 4: Yaw Left / Yaw Right (Yaw +/-)
         btn_yaw_left = tk.Button(control_frame, text='↺ Turn Left', bg="#e2e3e5", height=2)
         btn_yaw_left.grid(row=4, column=0, sticky="ew", padx=5, pady=5)
-        btn_yaw_left.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(self.power))  # +Yaw = Left
+        btn_yaw_left.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(self.power_ang))  # +Yaw = Left
         btn_yaw_left.bind('<ButtonRelease-1>', lambda e: self.set_rotate_z(0.0))
 
         btn_yaw_right = tk.Button(control_frame, text='Turn Right ↻', bg="#e2e3e5", height=2)
         btn_yaw_right.grid(row=4, column=1, sticky="ew", padx=5, pady=5)
-        btn_yaw_right.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(-self.power))  # -Yaw = Right
+        btn_yaw_right.bind('<ButtonPress-1>', lambda e: self.set_rotate_z(-self.power_ang))  # -Yaw = Right
         btn_yaw_right.bind('<ButtonRelease-1>', lambda e: self.set_rotate_z(0.0))
 
         # --- B. Telemetry Table ---

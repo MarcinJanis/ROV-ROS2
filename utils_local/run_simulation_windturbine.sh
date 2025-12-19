@@ -14,7 +14,6 @@ scenario:=/home/dev/ros2_ws/src/simulation/rov_stonefish/scenarios/rapture.scn
 
 
 
-
 # In case of problem with acces to gpu:
 # - sudo hase rights to use gpu 
 # sudo groupadd -g 1001 nvidia_host
