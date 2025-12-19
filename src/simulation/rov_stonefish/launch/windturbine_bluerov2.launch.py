@@ -90,8 +90,8 @@ def generate_launch_description():
             'simulation_data': get_package_share_directory('rov_stonefish') + '/data/',
             'scenario_desc': get_package_share_directory('rov_stonefish') + '/scenarios/windturbine_bluerov2.scn',
             'simulation_rate': '30.0',
-            'window_res_x': '1024', # 'window_res_x': '1720',
-            'window_res_y': '700', # window_res_y': '980',
+            'window_res_x': '1024',  # 'window_res_x': '1720',
+            'window_res_y': '700',  # window_res_y': '980',
             'rendering_quality': 'medium',
         }.items()
     )
