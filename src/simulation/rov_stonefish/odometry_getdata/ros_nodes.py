@@ -17,6 +17,8 @@ from cv_bridge import CvBridge
 
 from geometry_msgs.msg import WrenchStamped
 
+from threading import Event
+
 # Params
 SLOP_TIME = 0.2 # time tolerance to put measurements in one package
 QUEUE_SIZE = 10 # size of que to hold msgs of every kind
@@ -29,13 +31,13 @@ class StonefishSubscriber(Node):
     def __init__(self):
         super().__init__('stonefish_listener')
         
+        self.new_data_event = Event()
         # create subscriptions
-        # self.sub_GPS = Subscriber(self, NavSatFix, '/bluerov2/gps')   
         self.sub_odometry = Subscriber(self, Odometry, '/bluerov2/odometry')
-        self.sub_FLS_image = Subscriber(self, Image, '/bluerov2/fls/image')
-        # self.sub_FLS_image = Subscriber(self, Image, '/bluerov2/fls/display')
-        # self.sub_multibeam = Subscriber(self, LaserScan, '/bluerov2/multibeam')
-
+        self.sub_fls_image = Subscriber(self, Image, '/bluerov2/fls/image')
+        self.sub_imu = Subscriber(self, Imu, '/bluerov2/imu')
+        self.sub_dvl = Subscriber(self, DVL, '/bluerov2/dvl_sim')
+        self.sub_altitude = Subscriber(self, Range, '/bluerov2/altitude')
         self.bridge = CvBridge()
 
         self.init = False
@@ -43,11 +45,11 @@ class StonefishSubscriber(Node):
 
         # Aproximate Time Synchronizer - used to synchronize msgs into package
         self.ats = ApproximateTimeSynchronizer(
-                [self.sub_odometry, self.sub_FLS_image],  #, self.sub_GPS, self.sub_FLS_image], # Subs list
-                QUEUE_SIZE,                   # Queue size
-                SLOP_TIME,                    # Time tolerance
-                allow_headerless=False        # Discard headless msgs
-            )
+            [self.sub_odometry, self.sub_fls_image, self.sub_dvl, self.sub_altitude, self.sub_imu], 
+            QUEUE_SIZE,                   
+            SLOP_TIME,                    
+            allow_headerless=False        
+        )
         
         self.ats.registerCallback(self.sync_callback)
 
@@ -55,12 +57,15 @@ class StonefishSubscriber(Node):
         self.POSITION = None # np.array, dtype float64 shape (7,)
         self.VELOCITY = None # np.array, dtype float64 shape (6,)
         self.FLS = None # np.aray (image)
+        self.DVL_VEL = None # np.array, dtype float64 shape (3,)
+        self.DVL_ALTITUDE = None # float64, shape (1, )
+        self.IMU = None # np.array, dtype float64, shape (10, )
         self.TIME_STAMP = 0.0
 
-        self.get_logger().info('Subscriptions created:\n- -> GPS\n- -> Odometry\n- -> FLS')
+        self.get_logger().info('Subscriptions created:\n- -> Odometry\n- -> FLS\n- -> DVL')
 
 
-    def sync_callback(self, odometry_msg: Odometry, FLS_msg: Image): #: Odometry, gps_msg: NavSatFix, fls_compress_msg: CompressedImage):
+    def sync_callback(self, odometry_msg: Odometry, fls_msg: Image, dvl_msg: DVL, altitude_msg: Range, imu_msg : Imu): 
         
 
         # First call
@@ -70,7 +75,6 @@ class StonefishSubscriber(Node):
 
         # --- Odometry --- 
         self.TIME_STAMP = odometry_msg.header.stamp.sec + odometry_msg.header.stamp.nanosec * 1e-9 - self.t0_odometry_f
-        # self.get_logger().info(f'[msg recived] [t: {self.TIME_STAMP}]')
         self.POSITION = np.array([  odometry_msg.pose.pose.position.x,
                                         odometry_msg.pose.pose.position.y,
                                         odometry_msg.pose.pose.position.z,
@@ -87,11 +91,37 @@ class StonefishSubscriber(Node):
                                     odometry_msg.twist.twist.angular.y,
                                     odometry_msg.twist.twist.angular.z
                                 ], dtype=np.float64)
-        
+        # --- DVL --- 
+        self.DVL_VEL = np.array([
+            dvl_msg.velocity.x,
+            dvl_msg.velocity.y,
+            dvl_msg.velocity.z
+        ], dtype = np.float64)
+
+        self.DVL_ALTITUDE = altitude_msg.range
+        # --- IMU ---
+        self.IMU = np.array([
+            # 1. Orientation (Kwaternion)
+            imu_msg.orientation.x,
+            imu_msg.orientation.y,
+            imu_msg.orientation.z,
+            imu_msg.orientation.w,
+            
+            # 2. Angular Velocity (Gyroscope)
+            imu_msg.angular_velocity.x,
+            imu_msg.angular_velocity.y,
+            imu_msg.angular_velocity.z,
+            
+            # 3. Linear Acceleration (Accelerometr)
+            imu_msg.linear_acceleration.x,
+            imu_msg.linear_acceleration.y,
+            imu_msg.linear_acceleration.z
+        ], dtype=np.float64)
+
 
         # --- FLS ----
         try:
-            fls_img_cv = self.bridge.imgmsg_to_cv2(FLS_msg, desired_encoding='passthrough')
+            fls_img_cv = self.bridge.imgmsg_to_cv2(fls_msg, desired_encoding='passthrough')
             fls_img_cv = np.nan_to_num(fls_img_cv, nan=0.0)
             if fls_img_cv.dtype == np.float32 or fls_img_cv.dtype == np.float64:
                 self.FLS = (np.clip(fls_img_cv, 0.0, 1.0) * 255).astype(np.uint8)
@@ -101,7 +131,7 @@ class StonefishSubscriber(Node):
         except Exception as e:
             self.get_logger().error(f'[Error] Image conversion error:\n{e}')
 
-
+        self.new_data_event.set()
 # --- Control Node ---
 
 class StonefishPublisher(Node):

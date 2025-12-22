@@ -15,10 +15,8 @@ class MasterController:
         self.pub_node = publisher_node
         self.sub_node = listener_node
         
-        # Control loop configuration
-        # Zwiększamy rate, 1Hz to bardzo wolno dla sterowania, ale OK dla zbierania danych statycznych
-        self.control_rate = 10.0  
-        self.dt = 1.0 / self.control_rate
+        # self.control_rate = 2  
+        # self.dt = 1.0 / self.control_rate
 
         self.root_dir = general_dir
         self.act_dir = None
@@ -81,13 +79,17 @@ class MasterController:
                 
                 self.values.append(val)
 
-        # CSV init - dodajemy nagłówki dla akcji sterujących
+        # CSV init 
         self.csv_file_path = os.path.join(self.act_dir, 'sequence.csv')
         with open(self.csv_file_path, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['step_idx', 'timestamp', 
                              'pos_x', 'pos_y', 'pos_z', 
-                             'quat_x', 'quat_y', 'quat_z', 'quat_w'
+                             'quat_x', 'quat_y', 'quat_z', 'quat_w', 
+                             'dvl_vel_x', 'dvl_vel_y', 'dvl_vel_z', 'dvl_alt',
+                             'imu_orient_x', 'imu_orient_y', 'imu_orient_z', 'imu_orient_w',
+                             'imu_gyro_x', 'imu_gyro_y', 'imu_gyro_z', 
+                             'imu_accel_x', 'imu_accel_y', 'imu_accel_z'
                             ])
 
     def _map_action_to_wrench(self, action, value):
@@ -108,12 +110,12 @@ class MasterController:
         elif action == 'depth_change':
             cmd_shift[2] = val 
         elif action == 'rotate_right':
-            cmd_rotate[2] = -val # Check sign convention
+            cmd_rotate[2] = -val 
         elif action == 'rotate_left':
             cmd_rotate[2] = val
         elif action == 'circle_right':
             cmd_shift[0] = val         
-            cmd_rotate[2] = -self.boundaries['T_max'] # Check sign
+            cmd_rotate[2] = -self.boundaries['T_max'] 
         elif action == 'circle_left':
             cmd_shift[0] = val
             cmd_rotate[2] = self.boundaries['T_max']
@@ -121,37 +123,51 @@ class MasterController:
         return cmd_shift, cmd_rotate
     
     def get_obs(self):
-        # Bezpieczny dostęp do danych z ROS
         if self.sub_node.POSITION is None:
             return None
-        
         return {
+            'timestamp': self.sub_node.TIME_STAMP, 
             'position_full': self.sub_node.POSITION, # [x,y,z, qx,qy,qz,qw]
             'fls': self.sub_node.FLS,                
-            'timestamp': self.sub_node.TIME_STAMP
+            'dvl':self.sub_node.DVL_VEL,
+            'altitude':self.sub_node.DVL_ALTITUDE,
+            'imu':self.sub_node.IMU
         }
 
-    # POPRAWIONA DEFINICJA: przyjmuje argumenty, które przekazujesz
-    def save_step_data(self, step_idx, action_name, shift, rotate, obs_data):
+    def save_step_data(self, step_idx, obs_data):
         
         timestamp = obs_data.get('timestamp', 0.0)
         pos_full = obs_data.get('position_full', np.zeros(7))
         fls_img = obs_data.get('fls', None)
+        dvl_vel = obs_data.get('dvl', np.zeros(3))
+        dvl_alt = obs_data.get('altitude', 0.0)
+        imu = obs_data.get('imu', np.zeros(10))
         
+        if pos_full is None: pos_full = np.zeros(7)
+        dvl_vel = obs_data.get('dvl')
+        if dvl_vel is None: dvl_vel = np.zeros(3)
+        dvl_alt = obs_data.get('altitude')
+        if dvl_alt is None: dvl_alt = 0.0
+        imu = obs_data.get('imu')
+        if imu is None: imu = np.zeros(10)
+
         pos_x, pos_y, pos_z = pos_full[0], pos_full[1], pos_full[2]
         quat_x, quat_y, quat_z, quat_w = pos_full[3], pos_full[4], pos_full[5], pos_full[6]
 
-        # Zapis do CSV
+
+        # CSV Write
         with open(self.csv_file_path, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([
                 step_idx,
                 f"{timestamp:.3f}", 
                 f"{pos_x:.3f}", f"{pos_y:.3f}", f"{pos_z:.3f}",
-                f"{quat_x:.3f}", f"{quat_y:.3f}", f"{quat_z:.3f}", f"{quat_w:.3f}"
+                f"{quat_x:.3f}", f"{quat_y:.3f}", f"{quat_z:.3f}", f"{quat_w:.3f}", 
+                f"{dvl_vel[0]:.3f}", f"{dvl_vel[1]:.3f}", f"{dvl_vel[2]:.3f}", f"{dvl_alt:.3f}",
+                f"{imu[0]:.3f}", f"{imu[1]:.3f}", f"{imu[2]:.3f}", f"{imu[3]:.3f}", f"{imu[4]:.3f}", f"{imu[5]:.3f}", f"{imu[6]:.3f}", f"{imu[7]:.3f}", f"{imu[8]:.3f}", f"{imu[9]:.3f}"
             ])
             
-        # Zapis obrazu
+        # FLS img write
         if fls_img is not None and fls_img.size > 0:
             fls_img_name = f"{step_idx}.png"
             full_img_path = os.path.join(self.img_dir, fls_img_name)
@@ -168,44 +184,51 @@ class MasterController:
         action_idx_pointer = 0 
         
         print(f"[Sequence: {self.seq_id}] Starting execution. Target samples: {target_samples_num}")
-        
+        obs = None
+
         while samples_collected < target_samples_num:
-            
-            # Pobierz parametry bieżącej akcji
+        
             current_action_idx = action_idx_pointer % len(self.actions)
             action_type = self.actions[current_action_idx]
             action_val = self.values[current_action_idx]
             action_duration = self.durations[current_action_idx]
 
+            action_idx_pointer += 1
             print(f"[Action Loop] {action_type} (val={action_val:.1f}) for {action_duration:.1f}s. "
                   f"Samples: {samples_collected}/{target_samples_num}")
 
-            # Wyznacz siły
             shift, rotate = self._map_action_to_wrench(action_type, action_val)
-            
-            # Pętla czasowa dla pojedynczej akcji
+            self.pub_node.send_cmd(shift, rotate)
+           
             action_start_time = time.time()
-            
+
             while (time.time() - action_start_time) < action_duration:
-                loop_start = time.time()
-                
-                # 1. Pobierz obserwację (ROS DATA)
-                obs = self.get_obs()
-                
-                # Jeśli brak danych (np. ROS nie połączył), czekaj i ponów
-                if obs is None:
-                    time.sleep(0.05) # Ważne: oddaj procesor wątkowi ROS!
-                    continue
 
-                # 2. Sprawdzenie bezpieczników (Safety Limits)
-                current_z = obs['position_full'][2]
-                
-                # Zabezpieczenie przed uderzeniem w dno/zbyt dużą głębokością
-                # Nadpisuje sterowanie w osi Z, jeśli jest za głęboko
-                safe_shift = list(shift) # Kopia, żeby nie modyfikować oryginału permanentnie
-                if current_z > self.boundaries['max_depth']:   
-                    safe_shift[2] = 80.0 # Wymuszenie wypłynięcia (siła w górę)
-                    print(f"Warning: Max depth reached ({current_z:.2f}m). Surfacing force applied.")
+                # loop_start = time.time()
+                if self.sub_node.new_data_event.is_set():
 
-                # 3. Zapis danych
-                self.save_step_data
+                    obs = self.get_obs()
+                    self.save_step_data(samples_collected, obs)
+                    samples_collected += 1
+
+                    self.sub_node.new_data_event.clear()
+                    if samples_collected >= target_samples_num:
+                        break
+
+                    # Depth limitation
+                    current_z = obs['position_full'][2]
+                    safe_shift = list(shift) 
+                    if current_z > self.boundaries['max_depth']:   
+                        safe_shift[2] = 80.0 
+                        self.pub_node.send_cmd(safe_shift, rotate)
+                    elif current_z < self.boundaries['min_depth']:   
+                        safe_shift[2] = -40
+                        self.pub_node.send_cmd(safe_shift, rotate)
+                    else:
+                        self.pub_node.send_cmd(shift, rotate)
+
+                else:
+                    time.sleep(0.002)
+
+                
+                  
