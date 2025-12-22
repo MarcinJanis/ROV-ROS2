@@ -43,7 +43,12 @@ Range axis ($r$): The pulse is very short, resulting in high resolution (no blur
 
 Azimuth axis ($\theta$): The beam width is significant, causing returns to "smear" across the arc.
 
-We simulate this by convolving the raw white noise with an anisotropic Gaussian kernel (the approximated PSF):$$u_{corr} = u_{raw} * h(x,y), \quad v_{corr} = v_{raw} * h(x,y)$$Where the kernel $h(x,y)$ is defined by the beam width $\sigma_{\theta}$:$$h(x,y) = \delta(y) \cdot \frac{1}{\sqrt{2\pi}\sigma_{\theta}} e^{-\frac{x^2}{2\sigma_{\theta}^2}}$$Note: In the code, a normalization factor is applied after filtration to compensate for the peak amplitude loss inherent in discrete convolution
+We simulate this by convolving the raw white noise with an anisotropic Gaussian kernel (the approximated PSF):
+$$u_{corr} = u_{raw} * h(x,y), \quad v_{corr} = v_{raw} * h(x,y)$$
+Where the kernel $h(x,y)$ is defined by the beam width $\sigma_{\theta}$ :
+$$h(x,y) = \delta(y) \cdot \frac{1}{\sqrt{2\pi}\sigma_{\theta}} e^{-\frac{x^2}{2\sigma_{\theta}^2}}$$
+
+Note: In the code, a normalization factor is applied after filtration to compensate for the peak amplitude loss inherent in discrete convolution
 
 2.4) Image Formation (Interference and Detection) 
 
