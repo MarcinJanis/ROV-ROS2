@@ -335,10 +335,10 @@
 		-->
 		<sensor name="fls" rate="2.0" type="fls">
 			<specs beams="768" bins="800" horizontal_fov="130.0" vertical_fov="20.0"/>		
-			<settings range_min="2.0" range_max="30.0" gain="1.0"/>	
+			<settings range_min="0.5" range_max="30.0" gain="1.0"/>	
 			<noise multiplicative="0.0" additive="0.0"/>
 			<display colormap="hot"/>
-			<origin xyz="0.2 0.0 0.1" rpy="0.0 0.4 0.0"/>
+			<origin xyz="0.2 0.0 0.1" rpy="0.0 0.2 0.0"/>
 			<link name="base_link"/>
 			<ros_publisher topic="/$(arg vehicle_name)/fls"/>
 		</sensor>

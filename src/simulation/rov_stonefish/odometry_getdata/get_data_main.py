@@ -62,14 +62,14 @@ def main(args=None):
     dataset_folder = "./dataset"
 
     controller = MasterController(pub_node, sub_node, general_dir=dataset_folder)
-    controller.setup(seq_id=1, determinist=False, mv_count=20, boundaries=bounds)
+    controller.setup(seq_id=2, determinist=False, mv_count=10, boundaries=bounds)
 
     print("[Main] Controller setup complete. Starting data collection...")
     print("-------------------------------------------------------------")
 
     
     try:
-        controller.sequence_exec(target_samples_num=1000)
+        controller.sequence_exec(target_samples_num=300)
 
     except KeyboardInterrupt:
         print("\n[Main] Interrupted by user (Ctrl+C).")

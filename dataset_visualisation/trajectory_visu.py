@@ -5,7 +5,7 @@ import os
 os.environ['DISPLAY'] = ':23'
 
 
-trajectory_pth = './dataset/seq_1/sequence.csv'
+trajectory_pth = './dataset/seq_2/sequence.csv'
 data = np.loadtxt(trajectory_pth, delimiter = ',', skiprows=1)
 headers = {'idx':0, 't':1, 'x':2, 'y':3, 'z':4, 'qx':5, 'qy':6, 'qz':7, 'qw':8}
 print(data.shape)

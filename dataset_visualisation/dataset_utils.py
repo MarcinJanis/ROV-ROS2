@@ -52,8 +52,8 @@ def addSpeckleNoise(img, sigma = 0.5, m_min = 10, m_max = 200, beam_width = 5.0)
     v = np.random.normal(loc=0.0, scale=scale_map , size=(h, w)) # imaginary comonent of noise - phase
 
     # Gaussian filter with wide kernel 
-    u_cor = gaussian_filter(u, sigma=(beam_width, 0))
-    v_cor = gaussian_filter(v, sigma=(beam_width, 0))
+    u_cor = gaussian_filter(u, sigma=(0, beam_width))
+    v_cor = gaussian_filter(v, sigma=(0, beam_width))
 
     normalization_factor = np.sqrt(2 * np.pi * beam_width) # to keep energy for noise, despite gaussian blure
 
@@ -69,16 +69,20 @@ def addSpeckleNoise(img, sigma = 0.5, m_min = 10, m_max = 200, beam_width = 5.0)
 
     return img_noised
 
-def eneryLoss(img):
-    # gain pixels that are close to r_min, 
-    # weak pixels that are far
-    # it should be exponential 
-    # set gain_min = 0.3 -> worst case scenario - val = 0.3*val
-    pass
+import numpy as np
 
-def addBandReflects(img):
-    # add bands reflects that are visible in sonar images, like beam sof light with 
-    pass
+def energyLoss(img, alpha=0.008):
+    rows = np.arange(img.shape[0])
+    decay = np.exp(-alpha * rows) 
+    decay = np.ones(img.shape)* 255 * decay[:, np.newaxis]
+    img_after_loss = img + decay
+    return np.clip(img_after_loss, 0, 255).astype(np.uint8)
+
+def addBandReflects(img, omega1 = 0.02, omega2 = 0.12, gain = 0.02):
+    cols = np.arange(img.shape[1])
+    bands = (np.sin(cols * omega1) + np.sin(cols * omega2)) * gain * 255
+    img_with_bands = bands + img
+    return np.clip(img_with_bands, 0, 255).astype(np.uint8)
 
 def Polar2Cartesian(img, r_min = 2.0, r_max = 30.0, theta_min = -65*np.pi/180, theta_max = 65*np.pi/180, out_shape = None):
     # r - ranges
@@ -117,6 +121,8 @@ def Polar2Cartesian(img, r_min = 2.0, r_max = 30.0, theta_min = -65*np.pi/180, t
     R_map = (R - r_min)/dR
     Theta_map = (T - theta_min)/dT
 
-    output = cv2.remap(img, R_map.astype(np.float32), Theta_map.astype(np.float32), interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=255)
-    
+    # output = cv2.remap(img, R_map.astype(np.float32), Theta_map.astype(np.float32), interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=255)
+    # Theta_map odpowiada za kolumny (wiązki), R_map za wiersze (odległość)
+    output = cv2.remap(img, Theta_map.astype(np.float32), R_map.astype(np.float32), 
+                    interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=255)
     return output
