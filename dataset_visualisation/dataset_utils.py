@@ -65,7 +65,7 @@ def addSpeckleNoise(img, sigma = 0.5, m_min = 10, m_max = 200, beam_width = 5.0)
 
     img_noised = A**2 + v**2 # sum and module of coherent component (real objects echo) and incoherent component (echo from scatters)
 
-    img_noised = img_noised.astype(np.uint8)
+    # img_noised = img_noised.astype(np.uint8)
 
     return img_noised
 
@@ -76,13 +76,13 @@ def energyLoss(img, alpha=0.008):
     decay = np.exp(-alpha * rows) 
     decay = np.ones(img.shape)* 255 * decay[:, np.newaxis]
     img_after_loss = img + decay
-    return np.clip(img_after_loss, 0, 255).astype(np.uint8)
+    return np.clip(img_after_loss, 0, 255)
 
 def addBandReflects(img, omega1 = 0.02, omega2 = 0.12, gain = 0.02):
     cols = np.arange(img.shape[1])
     bands = (np.sin(cols * omega1) + np.sin(cols * omega2)) * gain * 255
     img_with_bands = bands + img
-    return np.clip(img_with_bands, 0, 255).astype(np.uint8)
+    return np.clip(img_with_bands, 0, 255)
 
 def Polar2Cartesian(img, r_min = 2.0, r_max = 30.0, theta_min = -65*np.pi/180, theta_max = 65*np.pi/180, out_shape = None):
     # r - ranges

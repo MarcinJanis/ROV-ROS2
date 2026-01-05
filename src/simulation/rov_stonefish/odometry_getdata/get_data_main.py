@@ -6,6 +6,8 @@ from threading import Thread
 from ros_nodes import StonefishPublisher, StonefishSubscriber
 from scenarios_reader import MasterController
 
+SEQ_ID = 3
+
 def spin_thread_func(executor):
     """Funkcja uruchamiana w osobnym wątku do obsługi callbacków ROS."""
     try:
@@ -54,22 +56,22 @@ def main(args=None):
 
     bounds = {
         't_min': 10.0,   't_max': 20.0,      # Czas trwania jednej akcji [s]
-        'F_min': 40.0,  'F_max': 80.0,      # Siła liniowa [N] (Forward, Slide)
+        'F_min': 30.0,  'F_max': 80.0,      # Siła liniowa [N] (Forward, Slide)
         'T_min': 0.1,   'T_max': 0.2,       # Moment obrotowy [Nm] (Yaw)
-        'max_depth': 16.0, 'min_depth': 3.0 # Maksymalna głębokość [m]
+        'max_depth': 20.0, 'min_depth': 5.0 # Maksymalna głębokość [m]
     }
 
     dataset_folder = "./dataset"
 
     controller = MasterController(pub_node, sub_node, general_dir=dataset_folder)
-    controller.setup(seq_id=2, determinist=False, mv_count=10, boundaries=bounds)
+    controller.setup(seq_id=SEQ_ID, determinist=False, mv_count=10, boundaries=bounds)
 
     print("[Main] Controller setup complete. Starting data collection...")
     print("-------------------------------------------------------------")
 
     
     try:
-        controller.sequence_exec(target_samples_num=300)
+        controller.sequence_exec(target_samples_num=1000)
 
     except KeyboardInterrupt:
         print("\n[Main] Interrupted by user (Ctrl+C).")

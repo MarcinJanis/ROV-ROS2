@@ -114,11 +114,15 @@ class MasterController:
         elif action == 'rotate_left':
             cmd_rotate[2] = val
         elif action == 'circle_right':
-            cmd_shift[0] = val         
-            cmd_rotate[2] = -self.boundaries['T_max'] 
+            # cmd_shift[0] = val         
+            # cmd_rotate[2] = -self.boundaries['T_max'] 
+            cmd_shift[0] = 40      
+            cmd_rotate[2] = -0.15
         elif action == 'circle_left':
-            cmd_shift[0] = val
-            cmd_rotate[2] = self.boundaries['T_max']
+            # cmd_shift[0] = val         
+            # cmd_rotate[2] = self.boundaries['T_max'] 
+            cmd_shift[0] = 40
+            cmd_rotate[2] = 0.15
 
         return cmd_shift, cmd_rotate
     

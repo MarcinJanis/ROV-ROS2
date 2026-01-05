@@ -34,7 +34,7 @@ class StonefishSubscriber(Node):
         self.new_data_event = Event()
         # create subscriptions
         self.sub_odometry = Subscriber(self, Odometry, '/bluerov2/odometry')
-        self.sub_fls_image = Subscriber(self, Image, '/bluerov2/fls/display')
+        self.sub_fls_image = Subscriber(self, Image, '/bluerov2/fls/image')
         self.sub_imu = Subscriber(self, Imu, '/bluerov2/imu')
         self.sub_dvl = Subscriber(self, DVL, '/bluerov2/dvl_sim')
         self.sub_altitude = Subscriber(self, Range, '/bluerov2/altitude')
