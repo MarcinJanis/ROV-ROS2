@@ -6,7 +6,9 @@ from threading import Thread
 from ros_nodes import StonefishPublisher, StonefishSubscriber
 from scenarios_reader import MasterController
 
-SEQ_ID = 3
+SEQ_ID = 2
+target_samples_num = 2000
+scenario_pth = '/home/dev/ros2_ws/dataset/data/seq_1/control_sequence.xml' # uncomment for deterministic mode
 
 def spin_thread_func(executor):
     """Funkcja uruchamiana w osobnym wątku do obsługi callbacków ROS."""
@@ -58,20 +60,22 @@ def main(args=None):
         't_min': 10.0,   't_max': 20.0,      # Czas trwania jednej akcji [s]
         'F_min': 30.0,  'F_max': 80.0,      # Siła liniowa [N] (Forward, Slide)
         'T_min': 0.1,   'T_max': 0.2,       # Moment obrotowy [Nm] (Yaw)
-        'max_depth': 20.0, 'min_depth': 5.0 # Maksymalna głębokość [m]
+        'max_depth': 15.0, 'min_depth': 10.0 # Maksymalna głębokość [m]
     }
 
-    dataset_folder = "./dataset"
+    dataset_folder = "./dataset/data"
 
     controller = MasterController(pub_node, sub_node, general_dir=dataset_folder)
-    controller.setup(seq_id=SEQ_ID, determinist=False, mv_count=10, boundaries=bounds)
 
+    # controller.setup(seq_id=SEQ_ID, determinist=False, mv_count=10, boundaries=bounds) # uncomment for undeterministic mode
+    
+    controller.setup(seq_id=SEQ_ID, determinist = True, scenario_pth = scenario_pth, mv_count=10, boundaries=bounds) # uncomment for deterministic mode 
     print("[Main] Controller setup complete. Starting data collection...")
     print("-------------------------------------------------------------")
 
     
     try:
-        controller.sequence_exec(target_samples_num=1000)
+        controller.sequence_exec(target_samples_num=target_samples_num)
 
     except KeyboardInterrupt:
         print("\n[Main] Interrupted by user (Ctrl+C).")

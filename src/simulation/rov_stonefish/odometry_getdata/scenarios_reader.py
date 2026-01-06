@@ -116,13 +116,13 @@ class MasterController:
         elif action == 'circle_right':
             # cmd_shift[0] = val         
             # cmd_rotate[2] = -self.boundaries['T_max'] 
-            cmd_shift[0] = 40      
-            cmd_rotate[2] = -0.15
+            cmd_shift[0] = 25      
+            cmd_rotate[2] = -0.2
         elif action == 'circle_left':
             # cmd_shift[0] = val         
             # cmd_rotate[2] = self.boundaries['T_max'] 
-            cmd_shift[0] = 40
-            cmd_rotate[2] = 0.15
+            cmd_shift[0] = 30
+            cmd_rotate[2] = 0.2
 
         return cmd_shift, cmd_rotate
     
@@ -212,6 +212,9 @@ class MasterController:
                 if self.sub_node.new_data_event.is_set():
 
                     obs = self.get_obs()
+                    if obs is None:
+                        continue
+                    
                     self.save_step_data(samples_collected, obs)
                     samples_collected += 1
 
@@ -219,17 +222,22 @@ class MasterController:
                     if samples_collected >= target_samples_num:
                         break
 
-                    # Depth limitation
                     current_z = obs['position_full'][2]
-                    safe_shift = list(shift) 
-                    if current_z > self.boundaries['max_depth']:   
-                        safe_shift[2] = 80.0 
-                        self.pub_node.send_cmd(safe_shift, rotate)
-                    elif current_z < self.boundaries['min_depth']:   
-                        safe_shift[2] = -40
-                        self.pub_node.send_cmd(safe_shift, rotate)
-                    else:
-                        self.pub_node.send_cmd(shift, rotate)
+                    applied_shift = list(shift) 
+
+                    is_unsafe = False
+
+                    if current_z < self.boundaries['max_depth']: 
+                        applied_shift[2] = 40.0  
+                        is_unsafe = True
+                        print(f'[Warning] Too deep! Z: {current_z:.2f} | Lim: {self.boundaries["max_depth"]}')
+
+                    elif current_z > self.boundaries['min_depth']: 
+                        applied_shift[2] = -40.0 
+                        is_unsafe = True
+                        print(f'[Warning] Too shallow! Z: {current_z:.2f} | Lim: {self.boundaries["min_depth"]}')
+
+                    self.pub_node.send_cmd(applied_shift, rotate)
 
                 else:
                     time.sleep(0.002)

@@ -44,7 +44,7 @@
 				<material name="Neutral"/>
 				<look name="None"/>
 				<mass value="0.025"/>
-				<compound_transform rpy="0.0 0.0 0.0" xyz="-0.1 -0.1 0.0"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="-0.1 -0.1 -0.12"/>
 			</internal_part>
 
 			<internal_part name="BackRight" type="box" physics="submerged" buoyant="true">
@@ -53,7 +53,7 @@
 				<material name="Neutral"/>
 				<look name="None"/>
 				<mass value="0.025"/>
-				<compound_transform rpy="0.0 0.0 0.0" xyz="-0.1 0.1 0.0"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="-0.1 0.1 -0.12"/>
 			</internal_part>
 
 			<internal_part name="FrontLeft" type="box" physics="submerged" buoyant="true">
@@ -62,7 +62,7 @@
 				<material name="Neutral"/>
 				<look name="None"/>
 				<mass value="0.025"/>
-				<compound_transform rpy="0.0 0.0 0.0" xyz="0.09 -0.1 0.0"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.09 -0.1 -0.12"/>
 			</internal_part>
 
 			<internal_part name="FrontRight" type="box" physics="submerged" buoyant="true">
@@ -71,7 +71,7 @@
 				<material name="Neutral"/>
 				<look name="None"/>
 				<mass value="0.025"/>
-				<compound_transform rpy="0.0 0.0 0.0" xyz="0.09 0.1 0.0"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.09 0.1 -0.12"/>
 			</internal_part>
 
 			<!-- <internal_part name="TopLeft" type="cylinder" physics="submerged" buoyant="true">
@@ -116,7 +116,7 @@
 				<material name="Steel"/>
 				<look name="black"/>
 				<mass value="2"/>
-				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.1"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.12"/>
 			</internal_part>
 
 			<internal_part name="WeightLeft" type="sphere" physics="submerged" buoyant="false">
