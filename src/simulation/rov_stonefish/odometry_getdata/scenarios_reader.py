@@ -28,8 +28,10 @@ class MasterController:
         self.actions = []      
         self.values = []       
 
-        os.makedirs(self.root_dir, exist_ok=True)
         
+
+        os.makedirs(self.root_dir, exist_ok=True)
+
     def setup(self, seq_id, determinist: bool = False, scenario_pth: str = None, 
               mv_count: int = 0, boundaries: dict = None):
         """
@@ -44,6 +46,10 @@ class MasterController:
         os.makedirs(self.img_dir, exist_ok=True)
     
         self.determinist = determinist
+
+        self.depth_regulator = PID(P = 5, I = 0.05, D = 12, out_min = -40, out_max = 40, dt = 0.5)
+        
+        self.t1 = time.time() # for regulator purpose
 
         if self.determinist:
             if not scenario_pth or not os.path.exists(scenario_pth):
@@ -227,15 +233,20 @@ class MasterController:
 
                     is_unsafe = False
 
-                    if current_z < self.boundaries['max_depth']: 
-                        applied_shift[2] = 40.0  
-                        is_unsafe = True
-                        print(f'[Warning] Too deep! Z: {current_z:.2f} | Lim: {self.boundaries["max_depth"]}')
+                    
+                    if time.time() - self.t1 > self.depth_regulator.dt: 
+                        self.t1 = time.time()
+                        applied_shift[2] = self.depth_regulator.out(current_z, self.boundaries['min_depth'])
+                        print(f'applied_shift[2]: { applied_shift[2]}')
+                    # if current_z > self.boundaries['max_depth']: 
+                    #     applied_shift[2] = 40.0  
+                    #     is_unsafe = True
+                    #     print(f'[Warning] Too deep. Z: {current_z:.2f} | Lim: {self.boundaries["max_depth"]}')
 
-                    elif current_z > self.boundaries['min_depth']: 
-                        applied_shift[2] = -40.0 
-                        is_unsafe = True
-                        print(f'[Warning] Too shallow! Z: {current_z:.2f} | Lim: {self.boundaries["min_depth"]}')
+                    # elif current_z < self.boundaries['min_depth']: 
+                    #     applied_shift[2] = -40.0 
+                    #     is_unsafe = True
+                    #     print(f'[Warning] Too shallow. Z: {current_z:.2f} | Lim: {self.boundaries["min_depth"]}')
 
                     self.pub_node.send_cmd(applied_shift, rotate)
 
@@ -243,4 +254,28 @@ class MasterController:
                     time.sleep(0.002)
 
                 
-                  
+class PID:
+    def __init__(self, P, I, D, out_min, out_max, dt):
+        self.P, self.I, self.D = P, I, D
+        self.out_min, self.out_max = out_min, out_max
+        self.sum = 0 
+        self.prev_e = 0 
+        self.dt = dt
+
+
+    def out(self, current_val, target):
+        e = current_val -  target
+        
+        out_P = e * self.P
+        
+        if abs(e) < 2.0: 
+            self.sum += e * self.I * self.dt
+            self.sum = max(min(self.sum, 10), -10)
+
+        out_D = (e - self.prev_e) / self.dt if self.dt > 0 else 0
+        self.prev_e = e
+
+        output = out_P + (out_D * self.D) + self.sum
+        print(f'PID: x: {current_val}, e: {e}, out_P: {out_P}, out_D: {out_D * self.D}, out_I: {self.sum}')
+        return max(min(output, self.out_max), self.out_min)
+
