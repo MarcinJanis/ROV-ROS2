@@ -40,6 +40,7 @@
 		<look name="tank" rgb="0.9 0.9 0.9" roughness="0.9"/>
 		<look name="cliff" gray="1.0" roughness="0.5" texture="cliff.jpg"/>
 		<look name="seabed" gray="1.0" roughness="0.9"/>
+		<look name="rusty" rgb="0.9 0.9 0.9" roughness="0.5" texture="RustMetal.bmp"/>
 	</looks>
 	
 
@@ -52,25 +53,76 @@
 		<world_transform xyz="0.0 0.0 30.0" rpy="0.0 0.0 0.0"/>
 	</static>
 
-	<!-- <static name="Seabed" type="plane">
-    	<material name="Rock"/>
-    	<look name="seabed"/>
-    	<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 25.0"/>
-	</static> -->
-	
-	<!-- <static name="Cliff" type="model">
-		<physical>
-			<mesh filename="cliff.obj" scale="4.0"/>
-			<origin rpy="3.14 0.0 0.0" xyz="4.0 0.0 2.0"/>
-		</physical>
-		<material name="Rock"/>
-		<look name="cliff"/>
-		<world_transform rpy="0.0 0.0 1.6" xyz="0.0 -30.0 30.0"/>
-	</static> -->
-    
-    <include file="$(find rov_stonefish)/scenarios/bluerov2.scn">
+	<!-- pipe -->
+	<!-- <static name="Pipe" type="model">
+        <physical>
+            <mesh filename="RustyPipe/RustPipe.obj" scale="1"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </physical>
+        <visual>
+            <mesh filename="RustyPipe/RustPipe.obj" scale="1"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </visual>
+        <material name="grade_S355_steel"/>
+        <look name="model"/>
+        <world_transform rpy="0.0 0.0 0.0" xyz="10.0 0.0 30.0"/>
+    </static> -->
+
+	<!-- ship 1-->
+	<static name="Wreckage1" type="model">
+        <physical>
+            <mesh filename="wreckage/model_phy.obj" scale="2.0"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </physical>
+        <visual>
+            <mesh filename="wreckage/model.obj" scale="2.0"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </visual>
+        <material name="grade_S355_steel"/>
+        <look name="model"/>
+        <world_transform rpy="0.0 0.0 0.0" xyz="10.0 0.0 20.0"/>
+    </static>
+
+	<!-- ship 2 -->
+	<static name="Wreckage2" type="model">
+        <physical>
+            <mesh filename="wreckage/model_phy.obj" scale="2.0"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </physical>
+        <visual>
+            <mesh filename="wreckage/model.obj" scale="2.0"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </visual>
+        <material name="grade_S355_steel"/>
+        <look name="model"/>
+        <world_transform rpy="0.0 0.0 0.0" xyz="30.0 -20 20.0"/>
+    </static>
+
+	<!-- ship 3 -->
+	<static name="Wreckage3" type="model">
+        <physical>
+            <mesh filename="wreckage/model_phy.obj" scale="2.0"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </physical>
+        <visual>
+            <mesh filename="wreckage/model.obj" scale="2.0"/>
+            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
+        </visual>
+        <material name="grade_S355_steel"/>
+        <look name="model"/>
+        <world_transform rpy="0.0 0.0 0.0" xyz="-20.0 20 20.0"/>
+    </static>
+
+
+	<include file="$(find rov_stonefish)/scenarios/bluerov2.scn">
 		<arg name="vehicle_name" value="bluerov2"/>
 		<arg name="position" value="0.0 0.0 0.0"/>
-		<arg name="orientation" value="0.0 0.0 0"/>
+		<arg name="orientation" value="0.0 0.0 0.0"/>
 	</include>
+
+	<world_view>
+    	<track name="bluerov2"/>           
+		<!-- <home_xyz>-2.0 -2.0 -2.0</home_xyz>  -->
+	</world_view>
+
 </scenario>

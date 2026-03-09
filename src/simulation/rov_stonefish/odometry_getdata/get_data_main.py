@@ -6,8 +6,8 @@ from threading import Thread
 from ros_nodes import StonefishPublisher, StonefishSubscriber
 from scenarios_reader import MasterController
 
-SEQ_ID = 1
-target_samples_num = 500
+SEQ_ID = 3
+target_samples_num = 50
 scenario_pth = '/home/dev/ros2_ws/dataset/data/seq_1/control_sequence.xml' # uncomment for deterministic mode
 
 def spin_thread_func(executor):

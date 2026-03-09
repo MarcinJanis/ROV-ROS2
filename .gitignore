@@ -53,4 +53,8 @@ qtcreator-*
 CATKIN_IGNORE
 
 
-dataset/data
+dataset/data/seq_0
+dataset/data/seq_1
+dataset/data/seq_2
+
+objects3d
