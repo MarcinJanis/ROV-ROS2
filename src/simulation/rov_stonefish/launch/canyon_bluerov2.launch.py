@@ -92,7 +92,7 @@ def generate_launch_description():
             get_package_share_directory('stonefish_ros2') + '/launch/stonefish_simulator.launch.py'),
         launch_arguments={
             'simulation_data': get_package_share_directory('rov_stonefish') + '/data/',
-            'scenario_desc': get_package_share_directory('rov_stonefish') + '/scenarios/longisland.scn',
+            'scenario_desc': get_package_share_directory('rov_stonefish') + '/scenarios/canyon.scn',
             'simulation_rate': '30.0',
             'window_res_x': '1024',  # 'window_res_x': '1720',
             'window_res_y': '700',  # window_res_y': '980',
