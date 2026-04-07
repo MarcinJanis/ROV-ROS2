@@ -6,8 +6,8 @@ from threading import Thread
 from ros_nodes import StonefishPublisher, StonefishSubscriber
 from simulation.rov_stonefish.odometry_getdata.scenarions_reader_v2 import MasterController
 
-SEQ_ID = 7
-target_samples_num = 2000
+SEQ_ID = 9
+target_samples_num = 1000
 # scenario_pth = '/home/dev/ros2_ws/dataset/data/seq_6/control_sequence.xml' # uncomment for deterministic mode
 
 def spin_thread_func(executor):
@@ -57,11 +57,11 @@ def main(args=None):
 
 
     bounds = {
-        't_min': 5.0,   't_max': 20.0,      # Czas trwania jednej akcji [s]
+        't_min': 1.0,   't_max': 7.0,      # Czas trwania jednej akcji [s]
         'F_min': 30.0,  'F_max': 80.0,      # Siła liniowa [N] (Forward, Slide)
         'T_min': 0.01,   'T_max': 0.1,       # Moment obrotowy [Nm] (Yaw)
-        'max_depth': 15.0, 'min_depth': 20.0, # Maksymalna głębokość [m]
-        'map_lim_x': 5760*0.15, 'map_lim_y':2880*0.15 # map wight/height * scale_x/scale_y  
+        'max_depth': 10.0, 'min_depth': 24.0 # Maksymalna głębokość [m]
+        # 'map_lim_x': 5760*0.15, 'map_lim_y':2880*0.15 # map wight/height * scale_x/scale_y  
     }
 
     # maps resolution:

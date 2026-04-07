@@ -68,14 +68,14 @@ class MasterController:
                 duration = random.uniform(self.boundaries['t_min'], self.boundaries['t_max'])
                 self.durations.append(duration)
                 
-                # 80 % chances for forward movement
+                # 70 % chances for forward movement
                 surge = random.uniform(self.boundaries['F_min'], self.boundaries['F_max']) if random.random() > 0.2 else 0.0
                 
                 # 60 % for spline / circ;e movement
-                yaw_torque = random.uniform(-self.boundaries['T_max'], self.boundaries['T_max']) if random.random() > 0.4 else 0.0
+                yaw_torque = random.uniform(-self.boundaries['T_max'], self.boundaries['T_max']) if random.random() > 0.3 else 0.0
                 
                 # 20 % for adding slide
-                sway = random.uniform(-self.boundaries['F_max']/2, self.boundaries['F_max']/2) if random.random() > 0.8 else 0.0
+                sway = random.uniform(-self.boundaries['F_max']/2, self.boundaries['F_max']/2) if random.random() > 0.7 else 0.0
                 
                 # 30 % for depth change
                 if random.random() > 0.7:
@@ -195,7 +195,7 @@ class MasterController:
         # Target state
         current_shift = [0.0, 0.0, 0.0]
         current_rotate = [0.0, 0.0, 0.0]
-        alpha = 0.05 # coefficient for low-pass filter for low changes rate, make moves more smooth 
+        alpha = 0.1 # coefficient for low-pass filter for low changes rate, make moves more smooth 
 
         while samples_collected < target_samples_num:
         
@@ -242,15 +242,14 @@ class MasterController:
 
                     # --- prevent from going out of map ---
                     
-                    current_x = obs['position_full'][0]
-                    current_y = obs['position_full'][1]
+                    # current_x = obs['position_full'][0]
+                    # current_y = obs['position_full'][1]
 
                     # Sprawdzamy, czy robot wyjechał poza wyznaczony kwadrat
-                    if abs(current_x) > self.boundaries['map_lim_x'] or abs(current_y) > self.boundaries['map_lim_y']:
-                        # Robot jest za daleko! Nadpisujemy wylosowaną komendę.
-                        # Zmuszamy go do jazdy do tyłu i mocnego obrotu.
-                        target_shift = [-self.boundaries['F_max'], 0.0, 0.0] 
-                        target_rotate = [0.0, 0.0, self.boundaries['T_max']]
+                    # if abs(current_x) > self.boundaries['map_lim_x'] or abs(current_y) > self.boundaries['map_lim_y']:
+                        
+                    #     target_shift = [-0.5*self.boundaries['F_max'], 0.0, 0.0] 
+                        # target_rotate = [0.0, 0.0, self.boundaries['T_min']]
 
 
                     # 2. Movement smoothing - low-pass filter
