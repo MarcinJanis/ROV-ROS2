@@ -237,7 +237,7 @@ class MasterController:
                     if time.time() - self.t1 > self.depth_regulator.dt: 
                         self.t1 = time.time()
                         applied_shift[2] = self.depth_regulator.out(current_z, self.boundaries['min_depth'])
-                        print(f'applied_shift[2]: { applied_shift[2]}')
+                        # print(f'applied_shift[2]: { applied_shift[2]}')
                     # if current_z > self.boundaries['max_depth']: 
                     #     applied_shift[2] = 40.0  
                     #     is_unsafe = True
@@ -276,6 +276,6 @@ class PID:
         self.prev_e = e
 
         output = out_P + (out_D * self.D) + self.sum
-        print(f'PID: x: {current_val}, e: {e}, out_P: {out_P}, out_D: {out_D * self.D}, out_I: {self.sum}')
+        # print(f'PID: x: {current_val}, e: {e}, out_P: {out_P}, out_D: {out_D * self.D}, out_I: {self.sum}')
         return max(min(output, self.out_max), self.out_min)
 
