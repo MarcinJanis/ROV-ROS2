@@ -4,11 +4,11 @@ import rclpy
 from rclpy.executors import MultiThreadedExecutor
 from threading import Thread
 from ros_nodes import StonefishPublisher, StonefishSubscriber
-from scenarios_reader import MasterController
+from simulation.rov_stonefish.odometry_getdata.scenarions_reader_v2 import MasterController
 
-SEQ_ID = 6
-target_samples_num = 10000
-scenario_pth = '/home/dev/ros2_ws/dataset/data/seq_6/control_sequence.xml' # uncomment for deterministic mode
+SEQ_ID = 7
+target_samples_num = 2000
+# scenario_pth = '/home/dev/ros2_ws/dataset/data/seq_6/control_sequence.xml' # uncomment for deterministic mode
 
 def spin_thread_func(executor):
     """Funkcja uruchamiana w osobnym wątku do obsługi callbacków ROS."""
@@ -60,16 +60,21 @@ def main(args=None):
         't_min': 5.0,   't_max': 20.0,      # Czas trwania jednej akcji [s]
         'F_min': 30.0,  'F_max': 80.0,      # Siła liniowa [N] (Forward, Slide)
         'T_min': 0.01,   'T_max': 0.1,       # Moment obrotowy [Nm] (Yaw)
-        'max_depth': 4.0, 'min_depth': 7.0 # Maksymalna głębokość [m]
+        'max_depth': 15.0, 'min_depth': 20.0, # Maksymalna głębokość [m]
+        'map_lim_x': 5760*0.15, 'map_lim_y':2880*0.15 # map wight/height * scale_x/scale_y  
     }
+
+    # maps resolution:
+    # - moon x = 5760, y = 2880
+    # - fiords x = , y = 
 
     dataset_folder = "./dataset/data"
 
     controller = MasterController(pub_node, sub_node, general_dir=dataset_folder)
 
-    # controller.setup(seq_id=SEQ_ID, determinist=False, mv_count=15, boundaries=bounds) # uncomment for undeterministic mode
+    controller.setup(seq_id=SEQ_ID, determinist=False, mv_count=50, boundaries=bounds) # uncomment for undeterministic mode
     
-    controller.setup(seq_id=SEQ_ID, determinist = True, scenario_pth = scenario_pth, mv_count=10, boundaries=bounds) # uncomment for deterministic mode 
+    # controller.setup(seq_id=SEQ_ID, determinist = True, scenario_pth = scenario_pth, mv_count=10, boundaries=bounds) # uncomment for deterministic mode 
     print("[Main] Controller setup complete. Starting data collection...")
     print("-------------------------------------------------------------")
 
