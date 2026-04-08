@@ -47,7 +47,7 @@
 	<!-- seabed -->
 	<static name="Bottom" type="terrain">
 		<height_map filename="seabed_moon.png"/>
-		<dimensions scalex="0.1" scaley="0.1" height="7.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
+		<dimensions scalex="0.15" scaley="0.15" height="10.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
 		<material name="Rock"/>
 		<look name="seabed"/>
 		<world_transform xyz="0.0 0.0 30.0" rpy="0.0 0.0 0.0"/>

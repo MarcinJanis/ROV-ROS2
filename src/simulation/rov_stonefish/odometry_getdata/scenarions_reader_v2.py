@@ -59,31 +59,60 @@ class MasterController:
             self.values = [float(act.find('value').text) for act in root.findall('cmd')]
 
         else: 
-            
             self.durations = []
             self.actions = []
             self.values = [] 
 
+            # Lista konkretnych, nazwanych manewrów
+            maneuvers = ['straight', 'curve', 'circle', 'pure_turn', 'slide']
+
             for _ in range(mv_count):
-                duration = random.uniform(self.boundaries['t_min'], self.boundaries['t_max'])
-                self.durations.append(duration)
+                # Losujemy manewr z przypisanymi wagami (prawdopodobieństwem)
+                maneuver = random.choices(
+                    maneuvers, 
+                    weights=[0.15, 0.30, 0.4, 0.10, 0.05], 
+                    k=1
+                )[0]
                 
-                # 70 % chances for forward movement
-                surge = random.uniform(self.boundaries['F_min'], self.boundaries['F_max']) if random.random() > 0.2 else 0.0
+                surge = 0.0
+                sway = 0.0
+                yaw_torque = 0.0
                 
-                # 60 % for spline / circ;e movement
-                yaw_torque = random.uniform(-self.boundaries['T_max'], self.boundaries['T_max']) if random.random() > 0.3 else 0.0
+                if maneuver == 'straight':
+                    surge = random.uniform(-self.boundaries['F_max'], self.boundaries['F_max'])
+                    duration = random.uniform(10.0, 20.0)
                 
-                # 20 % for adding slide
-                sway = random.uniform(-self.boundaries['F_max']/2, self.boundaries['F_max']/2) if random.random() > 0.7 else 0.0
-                
-                # 30 % for depth change
-                if random.random() > 0.7:
+                elif maneuver == 'curve':
+                    surge = random.uniform(-self.boundaries['F_min'], self.boundaries['F_max'])
+                    yaw_torque = random.uniform(-self.boundaries['T_max'], self.boundaries['T_max']) * 0.4 
+                    duration = random.uniform(10.0, 15.0)
+                    
+                elif maneuver == 'circle':
+                    
+                    surge = 9.0  
+                    
+                    yaw_dir = random.choice([-1, 1])
+                    yaw_torque = yaw_dir * self.boundaries['T_max'] * 0.2 # Używa pełnych 2.0 Nm z configu
+                    
+                    duration = random.uniform(3.0, 10.0)
+
+                elif maneuver == 'pure_turn':
+                    yaw_torque = random.choice([-1, 1]) * random.uniform(self.boundaries['T_max']*0.6, self.boundaries['T_max'])
+                    duration = random.uniform(2.0, 4.0)
+                    
+                elif maneuver == 'slide':
+                    sway = random.choice([-1, 1]) * random.uniform(self.boundaries['F_min'], self.boundaries['F_max'])
+                    duration = random.uniform(5.0, 10.0)
+
+                # 20 % szans na zmianę docelowej głębokości podczas nowego manewru
+                if random.random() > 0.8:
                     target_depth = random.uniform(self.boundaries['max_depth'], self.boundaries['min_depth']) 
                 else:
-                    target_depth = None # keep prev depth
+                    target_depth = None # Utrzymaj poprzednią głębokość
                 
+                self.durations.append(duration)
                 self.actions.append({
+                    'type': maneuver,
                     'surge': surge,
                     'sway': sway,
                     'yaw': yaw_torque,
@@ -202,12 +231,12 @@ class MasterController:
             current_action_idx = action_idx_pointer % len(self.actions)
             action_duration = self.durations[current_action_idx]
 
-            # Logger
+            # Logger and target updates
             if not self.determinist:
                 action_data = self.actions[current_action_idx]
                 if action_data['depth'] is not None:
                     self.current_target_depth = action_data['depth']
-                print(f"[Action Loop] Combining forces for {action_duration:.1f}s. Target Depth: {self.current_target_depth:.2f}m. Samples: {samples_collected}/{target_samples_num}")
+                print(f"[Action Loop] Executing '{action_data['type']}' for {action_duration:.1f}s. Target Depth: {self.current_target_depth:.2f}m. Samples: {samples_collected}/{target_samples_num}")
             else:
                 action_type = self.actions[current_action_idx]
                 action_val = self.values[current_action_idx]
@@ -233,24 +262,13 @@ class MasterController:
 
                     current_z = obs['position_full'][2]
 
-                    
                     if not self.determinist:
                         target_shift = [action_data['surge'], action_data['sway'], 0.0]
                         target_rotate = [0.0, 0.0, action_data['yaw']]
                     else:
                         target_shift, target_rotate = self._map_action_to_wrench(action_type, action_val)
 
-                    # --- prevent from going out of map ---
-                    
-                    # current_x = obs['position_full'][0]
-                    # current_y = obs['position_full'][1]
-
-                    # Sprawdzamy, czy robot wyjechał poza wyznaczony kwadrat
-                    # if abs(current_x) > self.boundaries['map_lim_x'] or abs(current_y) > self.boundaries['map_lim_y']:
-                        
-                    #     target_shift = [-0.5*self.boundaries['F_max'], 0.0, 0.0] 
-                        # target_rotate = [0.0, 0.0, self.boundaries['T_min']]
-
+         
 
                     # 2. Movement smoothing - low-pass filter
                     current_shift[0] += alpha * (target_shift[0] - current_shift[0])

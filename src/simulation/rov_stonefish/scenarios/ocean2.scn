@@ -45,13 +45,14 @@
 
 	<!-- seabed -->
 	<static name="Bottom" type="terrain">
-		<height_map filename="long_island.png"/>
-		<dimensions scalex="0.4" scaley="0.4" height="30.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
+		<height_map filename="ocean2.png"/>
+		<dimensions scalex="0.6" scaley="1.2" height="15.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
 		<material name="Rock"/>
 		<look name="seabed"/>
 		<world_transform xyz="0.0 0.0 30.0" rpy="0.0 0.0 0.0"/>
 	</static>
 
+	
 	<!-- pipe -->
 	<!-- <static name="Pipe" type="model">
         <physical>
@@ -118,7 +119,7 @@
 
 	<include file="$(find rov_stonefish)/scenarios/bluerov2.scn">
 		<arg name="vehicle_name" value="bluerov2"/>
-		<arg name="position" value="0.0 0.0 0.0"/>
+		<arg name="position" value="-300.0 500.0 0.0"/>
 		<arg name="orientation" value="0.0 0.0 0.0"/>
 	</include>
 

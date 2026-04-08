@@ -47,7 +47,7 @@
 	<!-- seabed -->
 	<static name="Bottom" type="terrain">
 		<height_map filename="fiords.png"/>
-		<dimensions scalex="0.4" scaley="0.4" height="30.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
+		<dimensions scalex="0.3" scaley="0.3" height="30.0"/> <!-- scalex/scaley - meters per pixel, height -> px 2^16 = height -->
 		<material name="Rock"/>
 		<look name="seabed"/>
 		<world_transform xyz="0.0 0.0 30.0" rpy="0.0 0.0 0.0"/>
@@ -71,11 +71,11 @@
 	<!-- ship 1-->
 	<static name="Wreckage1" type="model">
         <physical>
-            <mesh filename="wreckage/model_phy.obj" scale="3.0"/>
+            <mesh filename="wreckage/model_phy.obj" scale="1.0"/>
             <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
         </physical>
         <visual>
-            <mesh filename="wreckage/model.obj" scale="3.0"/>
+            <mesh filename="wreckage/model.obj" scale="1.0"/>
             <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
         </visual>
         <material name="grade_S355_steel"/>
@@ -83,35 +83,6 @@
         <world_transform rpy="0.0 0.0 0.0" xyz="10.0 0.0 20.0"/>
     </static>
 
-	<!-- ship 2 -->
-	<static name="Wreckage2" type="model">
-        <physical>
-            <mesh filename="wreckage/model_phy.obj" scale="2.0"/>
-            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
-        </physical>
-        <visual>
-            <mesh filename="wreckage/model.obj" scale="2.0"/>
-            <origin rpy="3.14 0.0 1.4" xyz="0.0 0.0 0.0"/>
-        </visual>
-        <material name="grade_S355_steel"/>
-        <look name="model"/>
-        <world_transform rpy="0.0 0.0 0.0" xyz="30.0 -40 20.0"/>
-    </static>
-
-	<!-- ship 3 -->
-	<static name="Wreckage3" type="model">
-        <physical>
-            <mesh filename="wreckage/model_phy.obj" scale="2.0"/>
-            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
-        </physical>
-        <visual>
-            <mesh filename="wreckage/model.obj" scale="2.0"/>
-            <origin rpy="3.14 0.0 3.14" xyz="0.0 0.0 0.0"/>
-        </visual>
-        <material name="grade_S355_steel"/>
-        <look name="model"/>
-        <world_transform rpy="0.0 0.0 0.0" xyz="-20.0 20 20.0"/>
-    </static>
 
 
 	<include file="$(find rov_stonefish)/scenarios/bluerov2.scn">
